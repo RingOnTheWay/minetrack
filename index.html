@@ -494,9 +494,13 @@
         // 更新玩家筛选器
         function updatePlayerFilter() {
             const data = staticData.player_stats;
-            const dates = Object.keys(data);
-            dates.forEach(date => {
-                Object.keys(data[date]).forEach(player => allPlayers.add(player));
+
+            // player_stats 结构: { stat_type: { date: { player: value } } }
+            // 遍历所有统计类型和日期，收集所有玩家
+            Object.values(data).forEach(statData => {
+                Object.values(statData).forEach(dateData => {
+                    Object.keys(dateData).forEach(player => allPlayers.add(player));
+                });
             });
 
             // 默认选中特定玩家
