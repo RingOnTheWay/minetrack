@@ -1341,6 +1341,14 @@
                 document.getElementById('dashboard').style.display = 'block';
                 updatePlayerFilter();
                 loadAllCharts();
+                // 静态页面模式下预先初始化战斗数据，避免用户在没有交互时看不到内容
+                if (!isLocalServer) {
+                    try {
+                        await initBattleTab();
+                    } catch (e) {
+                        console.warn('静态模式初始化战斗Tab失败:', e);
+                    }
+                }
             } else {
                 document.getElementById('noData').style.display = 'block';
             }
