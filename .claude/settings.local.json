@@ -15,7 +15,9 @@
       "Bash(taskkill //F //IM python.exe)",
       "Bash(.venv/Scripts/python mc_stats_server.py)",
       "Bash(.venv/Scripts/python scripts/export_data.py)",
-      "Bash(grep -E \"\\\\.\\(html|json|py|md|gitignore\\)$\")"
+      "Bash(grep -E \"\\\\.\\(html|json|py|md|gitignore\\)$\")",
+      "Bash(tasklist)",
+      "Bash(findstr python *)"
     ]
   }
 }

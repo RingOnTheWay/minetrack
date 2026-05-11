@@ -345,6 +345,192 @@
             max-height: 400px;
         }
 
+        .stat-type-selector {
+            display: flex;
+            gap: 12px;
+        }
+
+        .stat-type-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 20px;
+            border: 1px solid var(--md-sys-color-outline);
+            border-radius: 12px;
+            background: var(--md-sys-color-surface);
+            color: var(--md-sys-color-on-surface);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .stat-type-btn:hover {
+            background: var(--md-sys-color-surface-container-high);
+        }
+
+        .stat-type-btn.active {
+            background: var(--md-sys-color-primary-container);
+            border-color: var(--md-sys-color-primary);
+            color: var(--md-sys-color-on-primary-container);
+        }
+
+        .stat-type-btn .material-icons {
+            font-size: 20px;
+        }
+
+        .data-table {
+            overflow-x: auto;
+        }
+
+        .data-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--md-sys-color-outline-variant);
+        }
+
+        .data-table th {
+            font-weight: 500;
+            color: var(--md-sys-color-on-surface-variant);
+            background: var(--md-sys-color-surface-container-low);
+        }
+
+        .data-table tr:hover td {
+            background: var(--md-sys-color-surface-container-high);
+        }
+
+        .rank-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .rank-badge.gold {
+            background: #FFD700;
+            color: #000;
+        }
+
+        .rank-badge.silver {
+            background: #C0C0C0;
+            color: #000;
+        }
+
+        .rank-badge.bronze {
+            background: #CD7F32;
+            color: #fff;
+        }
+
+        .rank-badge.default {
+            background: var(--md-sys-color-surface-container-high);
+            color: var(--md-sys-color-on-surface);
+        }
+
+        .stat-type-selector {
+            display: flex;
+            gap: 12px;
+        }
+
+        .stat-type-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 20px;
+            border: 1px solid var(--md-sys-color-outline);
+            border-radius: 12px;
+            background: var(--md-sys-color-surface);
+            color: var(--md-sys-color-on-surface);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .stat-type-btn:hover {
+            background: var(--md-sys-color-surface-container-high);
+        }
+
+        .stat-type-btn.active {
+            background: var(--md-sys-color-primary-container);
+            border-color: var(--md-sys-color-primary);
+            color: var(--md-sys-color-on-primary-container);
+        }
+
+        .stat-type-btn .material-icons {
+            font-size: 20px;
+        }
+
+        .data-table {
+            overflow-x: auto;
+        }
+
+        .data-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--md-sys-color-outline-variant);
+        }
+
+        .data-table th {
+            font-weight: 500;
+            color: var(--md-sys-color-on-surface-variant);
+            background: var(--md-sys-color-surface-container-low);
+        }
+
+        .data-table tr:hover td {
+            background: var(--md-sys-color-surface-container-high);
+        }
+
+        .rank-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .rank-badge.gold {
+            background: #FFD700;
+            color: #000;
+        }
+
+        .rank-badge.silver {
+            background: #C0C0C0;
+            color: #000;
+        }
+
+        .rank-badge.bronze {
+            background: #CD7F32;
+            color: #fff;
+        }
+
+        .rank-badge.default {
+            background: var(--md-sys-color-surface-container-high);
+            color: var(--md-sys-color-on-surface);
+        }
+
         .loading {
             text-align: center;
             padding: 40px;
@@ -359,6 +545,133 @@
         @keyframes spin {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
+        }
+
+        /* 按钮样式 */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn .material-icons {
+            font-size: 18px;
+        }
+
+        .btn-primary {
+            background: var(--md-sys-color-primary);
+            color: var(--md-sys-color-on-primary);
+        }
+
+        .btn-primary:hover {
+            background: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+        }
+
+        .btn-danger {
+            background: var(--md-sys-color-error);
+            color: var(--md-sys-color-on-error);
+        }
+
+        .btn-danger:hover {
+            background: var(--md-sys-color-error-container);
+            color: var(--md-sys-color-on-error-container);
+        }
+
+        /* 表单样式 */
+        input[type="text"],
+        input[type="date"],
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--md-sys-color-outline);
+            border-radius: 12px;
+            font-size: 14px;
+            background: var(--md-sys-color-surface);
+            color: var(--md-sys-color-on-surface);
+        }
+
+        input[type="text"]:focus,
+        input[type="date"]:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--md-sys-color-primary);
+            box-shadow: 0 0 0 2px var(--md-sys-color-primary-container);
+        }
+
+        .folder-input-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .folder-input-group input {
+            flex: 1;
+        }
+
+        .help-text {
+            font-size: 12px;
+            color: var(--md-sys-color-on-surface-variant);
+            margin-top: 8px;
+        }
+
+        /* 结果显示 */
+        .scan-result {
+            margin-top: 16px;
+            padding: 16px;
+            border-radius: 12px;
+            background: var(--md-sys-color-surface-container-high);
+        }
+
+        .scan-result p {
+            margin: 0 0 8px 0;
+        }
+
+        .scan-result .error {
+            color: var(--md-sys-color-error);
+        }
+
+        .scan-result .success {
+            color: #2e7d32;
+        }
+
+        .scan-result .loading {
+            color: var(--md-sys-color-on-surface-variant);
+        }
+
+        .scan-result ul {
+            margin: 8px 0 0 20px;
+        }
+
+        /* 批量删除日期复选框 */
+        .date-checkboxes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding: 12px;
+            background: var(--md-sys-color-surface-container-high);
+            border-radius: 12px;
+        }
+
+        .date-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--md-sys-color-surface);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .date-checkbox:hover {
+            background: var(--md-sys-color-primary-container);
         }
 
         @media (max-width: 768px) {
@@ -386,9 +699,21 @@
                 <h1>MC统计</h1>
             </div>
             <nav class="sidebar-nav">
-                <div class="nav-item active">
+                <div class="nav-item active" onclick="switchTab('dashboard')">
                     <span class="material-icons">dashboard</span>
                     <span>仪表盘</span>
+                </div>
+                <div class="nav-item" onclick="switchTab('battle')">
+                    <span class="material-icons">gavel</span>
+                    <span>战斗统计</span>
+                </div>
+                <div class="nav-item" onclick="switchTab('scan')">
+                    <span class="material-icons">scanner</span>
+                    <span>数据扫描</span>
+                </div>
+                <div class="nav-item" onclick="switchTab('manage')">
+                    <span class="material-icons">settings</span>
+                    <span>数据管理</span>
                 </div>
             </nav>
         </div>
@@ -400,7 +725,7 @@
                 <div class="breadcrumb">
                     <span class="material-icons">home</span>
                     <span>/</span>
-                    <span class="breadcrumb-current">仪表盘</span>
+                    <span id="breadcrumbText" class="breadcrumb-current">仪表盘</span>
                 </div>
             </div>
 
@@ -460,6 +785,132 @@
                     </div>
                 </div>
 
+                <!-- 战斗统计Tab -->
+                <div id="tab-battle" class="tab-content" style="display: none;">
+                    <div class="surface-card">
+                        <div class="form-group">
+                            <label>筛选玩家：</label>
+                            <div class="player-filter-container" id="battleFilterContainer">
+                                <div class="player-filter-display" id="battleFilterDisplay">
+                                    <span class="player-filter-placeholder">全部玩家</span>
+                                </div>
+                                <span class="material-icons dropdown-arrow">expand_more</span>
+                                <div class="player-dropdown" id="battlePlayerDropdown"></div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>统计类型：</label>
+                            <div class="stat-type-selector">
+                                <button class="stat-type-btn active" data-category="killed" onclick="selectBattleCategory('killed')">
+                                    <span class="material-icons">swords</span>
+                                    怪物击杀
+                                </button>
+                                <button class="stat-type-btn" data-category="killed_by" onclick="selectBattleCategory('killed_by')">
+                                    <span class="material-icons">warning</span>
+                                    被怪物击杀
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="charts-container">
+                        <div class="chart-wrapper">
+                            <h2>
+                                <span class="material-icons">leaderboard</span>
+                                <span id="battleChartTitle">怪物击杀排行</span>
+                            </h2>
+                            <canvas id="battleChart"></canvas>
+                        </div>
+
+                        <div class="chart-wrapper">
+                            <h2>
+                                <span class="material-icons">emoji_events</span>
+                                Top 10 怪物统计
+                            </h2>
+                            <div id="topMobsTable" class="data-table"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 数据扫描Tab -->
+                <div id="tab-scan" class="tab-content" style="display: none;">
+                    <div class="surface-card">
+                        <h2><span class="material-icons">folder_open</span> 单文件夹扫描</h2>
+                        <div class="form-group">
+                            <label>服务器文件夹：</label>
+                            <div class="folder-input-group">
+                                <input type="text" id="serverFolder" placeholder="选择服务器文件夹..." readonly>
+                                <button onclick="selectServerFolder()" class="btn btn-primary">
+                                    <span class="material-icons">folder</span>
+                                    选择
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>日期：</label>
+                            <input type="date" id="scanDate">
+                        </div>
+                        <button onclick="scanData()" class="btn btn-primary">
+                            <span class="material-icons">radar</span>
+                            开始扫描
+                        </button>
+                        <div id="scanResult" class="scan-result"></div>
+                    </div>
+
+                    <div class="surface-card">
+                        <h2><span class="material-icons">drive_folder_upload</span> 批量导入</h2>
+                        <div class="form-group">
+                            <label>父文件夹：</label>
+                            <div class="folder-input-group">
+                                <input type="text" id="parentFolder" placeholder="选择包含多个服务器备份的文件夹..." readonly>
+                                <button onclick="selectParentFolder()" class="btn btn-primary">
+                                    <span class="material-icons">folder</span>
+                                    选择
+                                </button>
+                            </div>
+                        </div>
+                        <p class="help-text">此文件夹应包含多个子文件夹，每个子文件夹是一个服务器备份，文件夹名包含日期（如 2026-05-08）</p>
+                        <button onclick="batchScan()" class="btn btn-primary">
+                            <span class="material-icons">library_add</span>
+                            开始批量导入
+                        </button>
+                        <div id="batchScanResult" class="scan-result"></div>
+                    </div>
+                </div>
+
+                <!-- 数据管理Tab -->
+                <div id="tab-manage" class="tab-content" style="display: none;">
+                    <div class="surface-card">
+                        <h2><span class="material-icons">delete</span> 删除单日数据</h2>
+                        <div class="form-group">
+                            <label>选择日期：</label>
+                            <select id="deleteDate">
+                                <option value="">加载中...</option>
+                            </select>
+                        </div>
+                        <button onclick="deleteData()" class="btn btn-danger">
+                            <span class="material-icons">delete_forever</span>
+                            删除数据
+                        </button>
+                        <div id="deleteResult" class="scan-result"></div>
+                    </div>
+
+                    <div class="surface-card">
+                        <h2><span class="material-icons">library_delete</span> 批量删除</h2>
+                        <div class="form-group">
+                            <label>选择日期（可多选）：</label>
+                            <div id="batchDeleteDates" class="date-checkboxes">
+                                <span class="loading">加载中...</span>
+                            </div>
+                        </div>
+                        <button onclick="batchDelete()" class="btn btn-danger">
+                            <span class="material-icons">delete_sweep</span>
+                            批量删除
+                        </button>
+                        <div id="batchDeleteResult" class="scan-result"></div>
+                    </div>
+                </div>
+
                 <div id="noData" class="surface-card" style="display: none;">
                     <div class="loading">
                         <span class="material-icons">info</span>
@@ -476,7 +927,48 @@
         let selectedPlayers = new Set();
         let staticData = null;
 
-        // 加载静态数据
+        // 检测是否为本地服务器模式
+        const isLocalServer = window.location.hostname === 'localhost' && window.location.port === '5000';
+
+        // 从API加载数据（本地服务器模式）
+        async function loadFromAPI() {
+            try {
+                const mapSizesPromise = fetch('/api/map_sizes').then(r => r.json());
+                // 我们需要多个玩家统计类型，按UI使用的类型拉取
+                const statTypes = ['play_time', 'deaths', 'mob_kills'];
+                const playerStatsPromises = statTypes.map(t => fetch(`/api/player_stats?type=${encodeURIComponent(t)}`).then(r => r.json()).then(data => ({ t, data })));
+                // 拉取战斗两类数据（killed 和 killed_by）
+                const battleKilledPromise = fetch('/api/battle_stats?category=killed').then(r => r.json());
+                const battleKilledByPromise = fetch('/api/battle_stats?category=killed_by').then(r => r.json());
+
+                const [mapSizes, playerStatsArray, battleKilled, battleKilledBy] = await Promise.all([
+                    mapSizesPromise,
+                    Promise.all(playerStatsPromises),
+                    battleKilledPromise,
+                    battleKilledByPromise
+                ]);
+
+                const player_stats = {};
+                playerStatsArray.forEach(item => {
+                    player_stats[item.t] = item.data || {};
+                });
+
+                staticData = {
+                    map_sizes: mapSizes || {},
+                    player_stats: player_stats,
+                    battle_stats: {
+                        killed: battleKilled || {},
+                        killed_by: battleKilledBy || {}
+                    }
+                };
+                return true;
+            } catch (error) {
+                console.error('从API加载数据失败:', error);
+                return false;
+            }
+        }
+
+        // 加载静态数据（静态页面模式）
         async function loadStaticData() {
             try {
                 const response = await fetch('./data.json');
@@ -493,15 +985,20 @@
 
         // 更新玩家筛选器
         function updatePlayerFilter() {
-            const data = staticData.player_stats;
+            const data = staticData && staticData.player_stats ? staticData.player_stats : {};
+
+            // 清空已有玩家集合再收集
+            allPlayers.clear();
 
             // player_stats 结构: { stat_type: { date: { player: value } } }
             // 遍历所有统计类型和日期，收集所有玩家
             Object.values(data).forEach(statData => {
                 Object.values(statData).forEach(dateData => {
-                    Object.keys(dateData).forEach(player => allPlayers.add(player));
+                    Object.keys(dateData || {}).forEach(player => allPlayers.add(player));
                 });
             });
+
+            console.log('updatePlayerFilter: found players count =', allPlayers.size);
 
             // 默认选中特定玩家
             const defaultPlayers = ['MuxiAcio', 'RingOfficial', 'Roxy', 'hwj', 'roxy'];
@@ -509,6 +1006,10 @@
 
             // 构建下拉选项
             const dropdown = document.getElementById('playerDropdown');
+            if (!dropdown) {
+                console.warn('playerDropdown 元素未找到，跳过构建下拉');
+                return;
+            }
             const sortedPlayers = Array.from(allPlayers).sort();
 
             let html = '<div class="player-dropdown-item" data-value="all">全部玩家</div>';
@@ -666,6 +1167,11 @@
             });
         }
 
+        function hslToHsla(hsl, alpha) {
+            if (!hsl) return hsl;
+            return hsl.replace('hsl(', 'hsla(').replace(')', `, ${alpha})`);
+        }
+
         function loadPlayerStatsChart(statType, chartId, label, valueTransform = null) {
             const data = staticData.player_stats[statType] || {};
             const dates = Object.keys(data).sort();
@@ -676,7 +1182,7 @@
                 label: player,
                 data: dates.map(date => valueTransform ? valueTransform(data[date][player] || 0) : (data[date][player] || 0)),
                 borderColor: colors[index],
-                backgroundColor: colors[index] + '33',
+                backgroundColor: hslToHsla(colors[index], 0.18),
                 tension: 0.4
             }));
 
@@ -739,6 +1245,7 @@
             });
         }
 
+        // 颜色生成器（通用，返回 hsl 字符串，供仪表盘使用）
         function generateColors(count) {
             const colors = [];
             for (let i = 0; i < count; i++) {
@@ -748,11 +1255,86 @@
             return colors;
         }
 
+        // 颜色对（用于战斗图：边框 + 半透明背景）
+        function generateColorPairs(count) {
+            const pairs = [];
+            for (let i = 0; i < count; i++) {
+                const hue = (i * 137.508) % 360;
+                pairs.push({ border: `hsl(${hue}, 70%, 45%)`, bg: `hsla(${hue}, 70%, 60%, 0.18)` });
+            }
+            return pairs;
+        }
+
+        // 怪物中文映射表（参考用户提供的官方译名）
+        const mobNameMap = {
+            // 主世界
+            zombie: '僵尸',
+            husk: '尸壳',
+            drowned: '溺尸',
+            skeleton: '骷髅',
+            stray: '流浪者',
+            creeper: '苦力怕',
+            spider: '蜘蛛',
+            cave_spider: '洞穴蜘蛛',
+            slime: '史莱姆',
+            witch: '女巫',
+            guardian: '守卫者',
+            elder_guardian: '远古守卫者',
+            silverfish: '蠹虫',
+            endermite: '末影螨',
+            phantom: '幻翼',
+            pillager: '掠夺者',
+            vindicator: '卫道士',
+            evoker: '唤魔者',
+            ravager: '劫掠兽',
+            vex: '恼鬼',
+            enderman: '末影人',
+            wolf: '狼',
+            polar_bear: '北极熊',
+			warden: '监守者',
+            // 下界
+            ghast: '恶魂',
+            blaze: '烈焰人',
+            wither_skeleton: '凋灵骷髅',
+            magma_cube: '岩浆怪',
+            hoglin: '疣猪兽',
+            zoglin: '僵尸疣猪兽',
+            piglin: '猪灵',
+            piglin_brute: '猪灵蛮兵',
+            // 末地
+            shulker: '潜影贝',
+            ender_dragon: '末影龙',
+            // Boss
+            wither: '凋灵',
+            // 其他常见
+            blaze: '烈焰人',
+            chicken: '鸡',
+            cow: '牛',
+            pig: '猪',
+            sheep: '羊',
+            squid: '乌贼',
+            silverfish: '蠹虫',
+            villager: '村民',
+            player: '玩家',
+            iron_golem: '铁傀儡',
+            drowned: '溺尸',
+            ghast: '恶魂',
+            phantom: '幻翼',
+            slime: '史莱姆',
+            salmon: '三文鱼'
+        };
+
         // 页面加载
         window.addEventListener('load', async () => {
             document.getElementById('filterContainer').addEventListener('click', togglePlayerDropdown);
 
-            const loaded = await loadStaticData();
+            let loaded;
+            if (isLocalServer) {
+                loaded = await loadFromAPI();
+            } else {
+                loaded = await loadStaticData();
+            }
+
             document.getElementById('loading').style.display = 'none';
 
             if (loaded && staticData.map_sizes && Object.keys(staticData.map_sizes).length > 0) {
@@ -762,7 +1344,600 @@
             } else {
                 document.getElementById('noData').style.display = 'block';
             }
+
+            // 静态页面模式隐藏数据扫描和数据管理tab
+            if (!isLocalServer) {
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    const text = item.querySelector('span:last-child').textContent;
+                    if (text === '数据扫描' || text === '数据管理') {
+                        item.style.display = 'none';
+                    }
+                });
+            }
         });
+
+        // Tab切换
+        function switchTab(tabName) {
+            // 隐藏所有tab
+            ['dashboard', 'tab-battle', 'tab-scan', 'tab-manage'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = 'none';
+            });
+
+            // 更新侧边栏选中状态
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.add('active');
+            }
+
+            // 显示对应tab
+            const bc = document.getElementById('breadcrumbText');
+            if (tabName === 'dashboard') {
+                const el = document.getElementById('dashboard');
+                if (el) el.style.display = 'block';
+                if (bc) bc.textContent = '仪表盘';
+            } else if (tabName === 'battle') {
+                const el = document.getElementById('tab-battle');
+                if (el) el.style.display = 'block';
+                if (bc) bc.textContent = '战斗统计';
+                initBattleTab();
+            } else if (tabName === 'scan') {
+                const el = document.getElementById('tab-scan');
+                if (el) {
+                    el.style.display = 'block';
+                    if (bc) bc.textContent = '数据扫描';
+                    const scanDate = document.getElementById('scanDate');
+                    if (scanDate) scanDate.valueAsDate = new Date();
+                }
+            } else if (tabName === 'manage') {
+                const el = document.getElementById('tab-manage');
+                if (el) {
+                    el.style.display = 'block';
+                    if (bc) bc.textContent = '数据管理';
+                    loadDatesForManage();
+                }
+            }
+        }
+
+        // 战斗统计相关变量
+        let battleData = null;
+        let selectedBattlePlayers = new Set();
+        let battleCategory = 'killed';
+        let battleAllPlayers = new Set();
+
+        // 初始化战斗统计Tab
+        async function initBattleTab() {
+            try {
+                // 使用全局 staticData（由页面加载时填充），如未填充则尝试加载
+                if (!staticData) {
+                    if (isLocalServer) {
+                        const ok = await loadFromAPI();
+                        if (!ok) throw new Error('无法从 API 加载战斗数据');
+                    } else {
+                        const ok = await loadStaticData();
+                        if (!ok) throw new Error('无法加载静态战斗数据');
+                    }
+                }
+
+                const data = staticData || {};
+
+                const chartsContainer = document.querySelector('#tab-battle .charts-container');
+                if (!chartsContainer) {
+                    console.error('找不到战斗统计容器 (#tab-battle .charts-container)');
+                    return;
+                }
+
+                // 检查是否有战斗数据
+                if (!data.battle_stats || Object.keys(data.battle_stats).length === 0) {
+                    chartsContainer.innerHTML = `
+                        <div class="surface-card">
+                            <div class="loading">
+                                <span class="material-icons">info</span>
+                                <p>暂无战斗数据，请先导入最新数据</p>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                battleData = data.battle_stats;
+
+                // 收集所有玩家（遍历类别->日期->玩家）
+                battleAllPlayers.clear();
+                Object.values(battleData).forEach(categoryData => {
+                    Object.values(categoryData).forEach(dateData => {
+                        Object.keys(dateData || {}).forEach(player => battleAllPlayers.add(player));
+                    });
+                });
+
+                // 默认选中玩家
+                const defaultPlayers = ['MuxiAcio', 'RingOfficial', 'Roxy', 'hwj', 'roxy'];
+                selectedBattlePlayers = new Set(defaultPlayers.filter(p => battleAllPlayers.has(p)));
+
+                console.log('initBattleTab: battleAllPlayers count =', battleAllPlayers.size);
+                console.log('initBattleTab: selectedBattlePlayers initial =', Array.from(selectedBattlePlayers));
+
+                // 如果没有命中任何默认玩家，回退为全部玩家以便展示数据
+                if (selectedBattlePlayers.size === 0) {
+                    selectedBattlePlayers = new Set(battleAllPlayers);
+                    console.warn('initBattleTab: 默认玩家未命中，回退为全部玩家');
+                }
+
+                // 初始化玩家筛选器（确保下拉元素存在）
+                const dropdownEl = document.getElementById('battlePlayerDropdown');
+                if (!dropdownEl) {
+                    console.warn('battlePlayerDropdown 元素缺失，跳过初始化筛选器');
+                } else {
+                    initBattlePlayerFilter();
+                }
+
+                // 加载图表（确保画布存在）
+                const canvas = document.getElementById('battleChart');
+                if (canvas) {
+                    loadBattleChart();
+                }
+                const topTable = document.getElementById('topMobsTable');
+                if (topTable) {
+                    loadTopMobsTable();
+                }
+
+            } catch (error) {
+                console.error('加载战斗数据失败:', error);
+            }
+        }
+
+        // 初始化战斗统计玩家筛选器
+        function initBattlePlayerFilter() {
+            const dropdown = document.getElementById('battlePlayerDropdown');
+            const sortedPlayers = Array.from(battleAllPlayers).sort();
+
+            let html = '<div class="player-dropdown-item" data-value="all">全部玩家</div>';
+            sortedPlayers.forEach(player => {
+                const isSelected = selectedBattlePlayers.has(player);
+                html += `<div class="player-dropdown-item${isSelected ? ' selected' : ''}" data-value="${player}">${player}</div>`;
+            });
+            dropdown.innerHTML = html;
+
+            updateBattleFilterDisplay();
+        }
+
+        // 更新战斗筛选器显示
+        function updateBattleFilterDisplay() {
+            const display = document.getElementById('battleFilterDisplay');
+            if (selectedBattlePlayers.size === 0 || selectedBattlePlayers.size === battleAllPlayers.size) {
+                display.innerHTML = '<span class="player-filter-placeholder">全部玩家</span>';
+            } else {
+                const players = Array.from(selectedBattlePlayers).sort();
+                const visiblePlayers = players.slice(0, 5);
+                const remainingCount = players.length - 5;
+
+                let html = '';
+                visiblePlayers.forEach(player => {
+                    html += `<span class="player-badge">${player}<span class="remove-btn" onclick="removeBattlePlayer(event, '${player}')">×</span></span>`;
+                });
+                if (remainingCount > 0) {
+                    html += `<span class="player-filter-placeholder">+${remainingCount}...</span>`;
+                }
+                display.innerHTML = html;
+            }
+        }
+
+        // 移除战斗玩家
+        function removeBattlePlayer(event, player) {
+            event.stopPropagation();
+            selectedBattlePlayers.delete(player);
+            updateBattleDropdownSelection();
+            updateBattleFilterDisplay();
+            loadBattleChart();
+            loadTopMobsTable();
+        }
+
+        // 更新战斗下拉框选中状态
+        function updateBattleDropdownSelection() {
+            document.querySelectorAll('#battlePlayerDropdown .player-dropdown-item').forEach(item => {
+                const value = item.dataset.value;
+                if (value === 'all') {
+                    item.classList.toggle('selected', selectedBattlePlayers.size === battleAllPlayers.size || selectedBattlePlayers.size === 0);
+                } else {
+                    item.classList.toggle('selected', selectedBattlePlayers.has(value));
+                }
+            });
+        }
+
+        // 选择战斗统计类型
+        function selectBattleCategory(category) {
+            battleCategory = category;
+
+            // 更新按钮状态
+            document.querySelectorAll('.stat-type-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.category === category);
+            });
+
+            // 更新标题
+            document.getElementById('battleChartTitle').textContent = category === 'killed' ? '怪物击杀排行' : '被怪物击杀';
+
+            // 重新加载图表
+            loadBattleChart();
+            loadTopMobsTable();
+        }
+
+        // 加载战斗统计图表
+        function loadBattleChart() {
+            const data = battleData[battleCategory] || {};
+            const dates = Object.keys(data).sort();
+            const filteredPlayers = Array.from(selectedBattlePlayers).sort();
+            const colors = generateColorPairs(filteredPlayers.length + 1);
+
+            const datasets = filteredPlayers.map((player, index) => ({
+                label: player,
+                data: dates.map(date => {
+                    const playerData = data[date]?.[player] || {};
+                    // 计算该玩家当天的总击杀/死亡数
+                    return Object.values(playerData).reduce((sum, val) => sum + val, 0);
+                }),
+                borderColor: colors[index] ? colors[index].border : '#888',
+                backgroundColor: colors[index] ? colors[index].bg : 'rgba(0,0,0,0.08)',
+                backgroundColor: colors[index] ? colors[index].bg : 'rgba(0,0,0,0.08)',
+                tension: 0.4
+            }));
+
+            // 添加总计
+            const totalData = dates.map(date => {
+                const total = filteredPlayers.reduce((sum, player) => {
+                    const playerData = data[date]?.[player] || {};
+                    return sum + Object.values(playerData).reduce((s, v) => s + v, 0);
+                }, 0);
+                return total;
+            });
+            datasets.push({
+                label: '总计',
+                data: totalData,
+                borderColor: '#FF6B6B',
+                backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                borderWidth: 3,
+                tension: 0.4,
+                pointRadius: 4,
+                pointHoverRadius: 6
+            });
+
+            if (charts.battle) charts.battle.destroy();
+            const ctx = document.getElementById('battleChart').getContext('2d');
+            charts.battle = new Chart(ctx, {
+                type: 'bar',
+                data: { labels: dates, datasets: datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                padding: 20,
+                                font: { size: 12 }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: battleCategory === 'killed' ? '击杀数' : '死亡数' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 加载Top怪物表格
+        function loadTopMobsTable() {
+            const data = battleData[battleCategory] || {};
+            const dates = Object.keys(data).sort();
+            const filteredPlayers = Array.from(selectedBattlePlayers);
+
+            // 汇总所有玩家对每种怪物的统计
+            const mobTotals = {};
+            filteredPlayers.forEach(player => {
+                dates.forEach(date => {
+                    const playerData = data[date]?.[player] || {};
+                    Object.entries(playerData).forEach(([mob, count]) => {
+                        mobTotals[mob] = (mobTotals[mob] || 0) + count;
+                    });
+                });
+            });
+
+            // 排序并取Top 10
+            const topMobs = Object.entries(mobTotals)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+
+            // 生成表格
+            let html = '<table><thead><tr><th>排名</th><th>怪物</th><th>总数</th></tr></thead><tbody>';
+            topMobs.forEach(([mob, total], index) => {
+                const rankClass = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : 'default';
+                const mobName = mobNameMap[mob] || mob;
+                html += `<tr>
+                    <td><span class="rank-badge ${rankClass}">${index + 1}</span></td>
+                    <td>${mobName} <small class="muted">(${mob})</small></td>
+                    <td>${total}</td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+
+            const el = document.getElementById('topMobsTable');
+            if (el) el.innerHTML = html;
+        }
+
+        // 绑定战斗Tab玩家筛选器点击事件
+        const battleDropdown = document.getElementById('battlePlayerDropdown');
+        if (battleDropdown) {
+            battleDropdown.addEventListener('click', function(event) {
+                event.stopPropagation();
+                const item = event.target.closest('.player-dropdown-item');
+                if (!item) return;
+
+                const value = item.dataset.value;
+                if (value === 'all') {
+                    selectedBattlePlayers = new Set(battleAllPlayers);
+                } else {
+                    if (selectedBattlePlayers.size === battleAllPlayers.size) {
+                        selectedBattlePlayers = new Set([value]);
+                    } else if (selectedBattlePlayers.has(value)) {
+                        selectedBattlePlayers.delete(value);
+                        if (selectedBattlePlayers.size === 0) {
+                            selectedBattlePlayers = new Set(battleAllPlayers);
+                        }
+                    } else {
+                        selectedBattlePlayers.add(value);
+                    }
+                }
+
+                updateBattleDropdownSelection();
+                updateBattleFilterDisplay();
+                loadBattleChart();
+                loadTopMobsTable();
+            });
+        }
+
+        // 数据扫描相关函数
+        async function selectServerFolder() {
+            try {
+                const response = await fetch('/api/select_folder', { method: 'GET' });
+                const result = await response.json();
+                if (result.success) {
+                    document.getElementById('serverFolder').value = result.path;
+                }
+            } catch (error) {
+                console.error('选择文件夹失败:', error);
+            }
+        }
+
+        async function scanData() {
+            const folder = document.getElementById('serverFolder').value;
+            const date = document.getElementById('scanDate').value;
+
+            if (!folder) {
+                document.getElementById('scanResult').innerHTML = '<p class="error">请先选择服务器文件夹</p>';
+                return;
+            }
+
+            if (!date) {
+                document.getElementById('scanResult').innerHTML = '<p class="error">请选择日期</p>';
+                return;
+            }
+
+            document.getElementById('scanResult').innerHTML = '<p class="loading">正在扫描...</p>';
+
+            try {
+                const response = await fetch('/api/scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ folder, date })
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    document.getElementById('scanResult').innerHTML = `
+                        <p class="success">扫描成功！</p>
+                        <ul>
+                            <li>日期: ${result.date}</li>
+                            <li>地图: ${result.maps.map(m => `${m.name}: ${m.size}MB`).join(', ')}</li>
+                            <li>玩家数: ${result.player_count}</li>
+                            <li>战斗统计: ${result.battle_stats_count} 条</li>
+                        </ul>
+                    `;
+                    // 导出数据
+                    exportData();
+                } else {
+                    document.getElementById('scanResult').innerHTML = `<p class="error">扫描失败: ${result.error}</p>`;
+                }
+            } catch (error) {
+                document.getElementById('scanResult').innerHTML = `<p class="error">扫描失败: ${error.message}</p>`;
+            }
+        }
+
+        async function selectParentFolder() {
+            try {
+                const response = await fetch('/api/select_folder', { method: 'GET' });
+                const result = await response.json();
+                if (result.success) {
+                    document.getElementById('parentFolder').value = result.path;
+                }
+            } catch (error) {
+                console.error('选择文件夹失败:', error);
+            }
+        }
+
+        async function batchScan() {
+            const parentFolder = document.getElementById('parentFolder').value;
+
+            if (!parentFolder) {
+                document.getElementById('batchScanResult').innerHTML = '<p class="error">请先选择父文件夹</p>';
+                return;
+            }
+
+            document.getElementById('batchScanResult').innerHTML = '<p class="loading">正在批量导入...</p>';
+
+            try {
+                const response = await fetch('/api/batch_scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ parent_folder: parentFolder })
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    let html = `<p class="success">批量导入完成！</p>
+                        <ul>
+                            <li>总计: ${result.total} 个文件夹</li>
+                            <li>成功: ${result.imported} 个</li>
+                            <li>失败: ${result.failed} 个</li>
+                        </ul>`;
+                    if (result.results.length > 0) {
+                        html += '<details><summary>成功列表</summary><ul>';
+                        result.results.forEach(r => {
+                            html += `<li>${r.folder} (${r.date}) - ${r.player_count} 玩家</li>`;
+                        });
+                        html += '</ul></details>';
+                    }
+                    if (result.errors.length > 0) {
+                        html += '<details><summary>失败列表</summary><ul>';
+                        result.errors.forEach(e => {
+                            html += `<li>${e.folder}: ${e.error}</li>`;
+                        });
+                        html += '</ul></details>';
+                    }
+                    document.getElementById('batchScanResult').innerHTML = html;
+                    // 导出数据
+                    exportData();
+                } else {
+                    document.getElementById('batchScanResult').innerHTML = `<p class="error">批量导入失败: ${result.error}</p>`;
+                }
+            } catch (error) {
+                document.getElementById('batchScanResult').innerHTML = `<p class="error">批量导入失败: ${error.message}</p>`;
+            }
+        }
+
+        // 数据管理相关函数
+        async function loadDatesForManage() {
+            try {
+                const response = await fetch('/api/dates');
+                const dates = await response.json();
+
+                // 填充删除单日数据的下拉框
+                const select = document.getElementById('deleteDate');
+                select.innerHTML = dates.length > 0
+                    ? dates.map(d => `<option value="${d}">${d}</option>`).join('')
+                    : '<option value="">无可用数据</option>';
+
+                // 填充批量删除的复选框
+                const container = document.getElementById('batchDeleteDates');
+                container.innerHTML = dates.length > 0
+                    ? dates.map(d => `<label class="date-checkbox"><input type="checkbox" value="${d}"> ${d}</label>`).join('')
+                    : '<span class="loading">无可用数据</span>';
+            } catch (error) {
+                console.error('加载日期失败:', error);
+            }
+        }
+
+        async function deleteData() {
+            const date = document.getElementById('deleteDate').value;
+            if (!date) {
+                document.getElementById('deleteResult').innerHTML = '<p class="error">请选择日期</p>';
+                return;
+            }
+
+            if (!confirm(`确定要删除 ${date} 的所有数据吗？此操作不可恢复！`)) {
+                return;
+            }
+
+            document.getElementById('deleteResult').innerHTML = '<p class="loading">正在删除...</p>';
+
+            try {
+                const response = await fetch('/api/delete_date', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ date })
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    document.getElementById('deleteResult').innerHTML = `
+                        <p class="success">删除成功！</p>
+                        <ul>
+                            <li>删除地图记录: ${result.map_records_deleted} 条</li>
+                            <li>删除玩家记录: ${result.player_records_deleted} 条</li>
+                        </ul>
+                    `;
+                    loadDatesForManage();
+                    exportData();
+                } else {
+                    document.getElementById('deleteResult').innerHTML = `<p class="error">删除失败: ${result.error}</p>`;
+                }
+            } catch (error) {
+                document.getElementById('deleteResult').innerHTML = `<p class="error">删除失败: ${error.message}</p>`;
+            }
+        }
+
+        async function batchDelete() {
+            const checkboxes = document.querySelectorAll('#batchDeleteDates input:checked');
+            const dates = Array.from(checkboxes).map(cb => cb.value);
+
+            if (dates.length === 0) {
+                document.getElementById('batchDeleteResult').innerHTML = '<p class="error">请选择至少一个日期</p>';
+                return;
+            }
+
+            if (!confirm(`确定要删除 ${dates.length} 天的数据吗？此操作不可恢复！`)) {
+                return;
+            }
+
+            document.getElementById('batchDeleteResult').innerHTML = '<p class="loading">正在批量删除...</p>';
+
+            try {
+                const response = await fetch('/api/batch_delete', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ dates })
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    document.getElementById('batchDeleteResult').innerHTML = `
+                        <p class="success">批量删除完成！</p>
+                        <ul>
+                            <li>删除日期数: ${result.total_dates} 天</li>
+                            <li>删除地图记录: ${result.total_map_records_deleted} 条</li>
+                            <li>删除玩家记录: ${result.total_player_records_deleted} 条</li>
+                        </ul>
+                    `;
+                    loadDatesForManage();
+                    exportData();
+                } else {
+                    document.getElementById('batchDeleteResult').innerHTML = `<p class="error">删除失败: ${result.error}</p>`;
+                }
+            } catch (error) {
+                document.getElementById('batchDeleteResult').innerHTML = `<p class="error">删除失败: ${error.message}</p>`;
+            }
+        }
+
+        // 导出数据到data.json
+        async function exportData() {
+            try {
+                const response = await fetch('/api/export', { method: 'POST' });
+                const result = await response.json();
+                if (result.success) {
+                    console.log('数据已导出');
+                } else {
+                    console.error('导出失败:', result.error);
+                }
+            } catch (error) {
+                console.error('导出数据失败:', error);
+            }
+        }
+
     </script>
 </body>
 </html>
