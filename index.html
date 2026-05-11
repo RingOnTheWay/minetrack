@@ -1136,6 +1136,10 @@
                     <span class="material-icons">build</span>
                     <span>物品合成</span>
                 </div>
+                <div class="nav-item" onclick="switchTab('items')">
+                    <span class="material-icons">inventory_2</span>
+                    <span>物品统计</span>
+                </div>
                 <div class="nav-item" onclick="switchTab('scan')">
                     <span class="material-icons">scanner</span>
                     <span>数据扫描</span>
@@ -1308,6 +1312,57 @@
                     </div>
                 </div>
 
+                <!-- 物品统计Tab -->
+                <div id="tab-items" class="tab-content" style="display: none;">
+                    <div class="surface-card">
+                        <div class="form-group">
+                            <label>筛选玩家：</label>
+                            <div class="player-filter-container" id="itemsFilterContainer">
+                                <div class="player-filter-display" id="itemsFilterDisplay">
+                                    <span class="player-filter-placeholder">全部玩家</span>
+                                </div>
+                                <span class="material-icons dropdown-arrow">expand_more</span>
+                                <div class="player-dropdown" id="itemsPlayerDropdown"></div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>统计类型：</label>
+                            <div class="stat-type-selector">
+                                <button class="stat-type-btn active" data-category="picked_up" onclick="selectItemsCategory('picked_up')">
+                                    <span class="material-icons">download</span>
+                                    拾取物品
+                                </button>
+                                <button class="stat-type-btn" data-category="dropped" onclick="selectItemsCategory('dropped')">
+                                    <span class="material-icons">delete</span>
+                                    丢弃物品
+                                </button>
+                                <button class="stat-type-btn" data-category="used" onclick="selectItemsCategory('used')">
+                                    <span class="material-icons">touch_app</span>
+                                    使用物品
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="charts-container">
+                        <div class="chart-wrapper">
+                            <h2>
+                                <span class="material-icons">bar_chart</span>
+                                <span id="itemsChartTitle">拾取物品统计</span>
+                            </h2>
+                            <canvas id="itemsChart"></canvas>
+                        </div>
+
+                        <div class="chart-wrapper">
+                            <h2>
+                                <span class="material-icons">emoji_events</span>
+                                Top 10 物品
+                            </h2>
+                            <div id="topItemsTable" class="data-table"></div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 数据扫描Tab -->
                 <div id="tab-scan" class="tab-content" style="display: none;">
                     <div class="surface-card">
@@ -1429,13 +1484,20 @@
                 const craftCraftedPromise = fetch('/api/craft_stats?category=crafted').then(r => r.json()).catch(() => ({}));
                 const craftUsedPromise = fetch('/api/craft_stats?category=used').then(r => r.json()).catch(() => ({}));
 
-                const [mapSizes, playerStatsArray, battleKilled, battleKilledBy, craftCrafted, craftUsed] = await Promise.all([
+                const itemsPickedUpPromise = fetch('/api/item_stats?category=picked_up').then(r => r.json()).catch(() => ({}));
+                const itemsDroppedPromise = fetch('/api/item_stats?category=dropped').then(r => r.json()).catch(() => ({}));
+                const itemsUsedPromise = fetch('/api/item_stats?category=used').then(r => r.json()).catch(() => ({}));
+
+                const [mapSizes, playerStatsArray, battleKilled, battleKilledBy, craftCrafted, craftUsed, itemsPickedUp, itemsDropped, itemsUsed] = await Promise.all([
                     mapSizesPromise,
                     Promise.all(playerStatsPromises),
                     battleKilledPromise,
                     battleKilledByPromise,
                     craftCraftedPromise,
-                    craftUsedPromise
+                    craftUsedPromise,
+                    itemsPickedUpPromise,
+                    itemsDroppedPromise,
+                    itemsUsedPromise
                 ]);
 
                 const player_stats = {};
@@ -1453,6 +1515,11 @@
                     craft_stats: {
                         crafted: craftCrafted || {},
                         used: craftUsed || {}
+                    },
+                    item_stats: {
+                        picked_up: itemsPickedUp || {},
+                        dropped: itemsDropped || {},
+                        used: itemsUsed || {}
                     }
                 };
                 return true;
@@ -1584,6 +1651,8 @@
             document.getElementById('battlePlayerDropdown').classList.remove('show');
             document.getElementById('craftFilterContainer').classList.remove('open');
             document.getElementById('craftPlayerDropdown').classList.remove('show');
+            document.getElementById('itemsFilterContainer').classList.remove('open');
+            document.getElementById('itemsPlayerDropdown').classList.remove('show');
         });
 
         // 绑定下拉框点击事件
@@ -1832,7 +1901,7 @@
             salmon: '三文鱼'
         };
 
-        const itemNameMap = {
+                const itemNameMap = {
             acacia_boat: '金合欢木船',
             acacia_button: '金合欢木按钮',
             acacia_door: '金合欢木门',
@@ -1841,19 +1910,29 @@
             acacia_log: '金合欢原木',
             acacia_planks: '金合欢木板',
             acacia_pressure_plate: '金合欢木压力板',
+            acacia_sapling: '金合欢树苗',
             acacia_sign: '金合欢木告示牌',
             acacia_slab: '金合欢木台阶',
             acacia_stairs: '金合欢木楼梯',
             acacia_trapdoor: '金合欢木活板门',
             acacia_wood: '金合欢木',
             activator_rail: '激活铁轨',
+            air: '空气',
+            allium: '绒球葱',
+            amethyst_block: '紫水晶块',
+            amethyst_cluster: '紫水晶簇',
+            amethyst_shard: '紫水晶碎片',
+            ancient_debris: '远古残骸',
             andesite: '安山岩',
             anvil: '铁砧',
             apple: '苹果',
+            armadillo_scute: '犰狳鳞甲',
             armor_stand: '盔甲架',
             arrow: '箭',
             axolotl_bucket: '美西螈桶',
+            azure_bluet: '蓝花美耳草',
             baked_potato: '烤马铃薯',
+            bamboo: '竹子',
             bamboo_block: '竹块',
             bamboo_button: '竹按钮',
             bamboo_door: '竹门',
@@ -1870,18 +1949,27 @@
             bamboo_trapdoor: '竹活板门',
             banner: '旗帜',
             barrel: '木桶',
+            basalt: '玄武岩',
+            bat: '蝙蝠',
             beacon: '信标',
             bed: '床',
+            beef: '生牛肉',
             beehive: '蜂箱',
+            beetroot: '甜菜根',
+            beetroot_seeds: '甜菜种子',
             beetroot_soup: '甜菜汤',
             bell: '钟',
+            big_dripleaf: '大型垂滴叶',
             birch_boat: '白桦木船',
             birch_button: '白桦木按钮',
             birch_door: '白桦木门',
             birch_fence: '白桦木栅栏',
             birch_fence_gate: '白桦木栅栏门',
+            birch_leaves: '白桦树叶',
+            birch_log: '白桦原木',
             birch_planks: '白桦木板',
             birch_pressure_plate: '白桦木压力板',
+            birch_sapling: '白桦树苗',
             birch_sign: '白桦木告示牌',
             birch_slab: '白桦木台阶',
             birch_stairs: '白桦木楼梯',
@@ -1897,7 +1985,9 @@
             black_stained_glass_pane: '黑色染色玻璃板',
             black_terracotta: '黑色陶瓦',
             black_wool: '黑色羊毛',
+            blackstone: '黑石',
             blast_furnace: '高炉',
+            blaze: '烈焰人',
             blaze_powder: '烈焰粉',
             blaze_rod: '烈焰棒',
             blue_banner: '蓝色旗帜',
@@ -1907,17 +1997,24 @@
             blue_dye: '蓝色染料',
             blue_glazed_terracotta: '蓝色带釉陶瓦',
             blue_ice: '蓝冰',
+            blue_orchid: '兰花',
             blue_stained_glass: '蓝色染色玻璃',
             blue_stained_glass_pane: '蓝色染色玻璃板',
             blue_terracotta: '蓝色陶瓦',
             blue_wool: '蓝色羊毛',
+            bogged: '沼骸',
+            bolt_armor_trim_smithing_template: '涡流盔甲纹饰锻造模板',
+            bone: '骨头',
             bone_block: '骨块',
             bone_meal: '骨粉',
             book: '书',
             bookshelf: '书架',
+            bottle_o_enchanting: '附魔之瓶',
             bow: '弓',
             bowl: '碗',
             bread: '面包',
+            breeze: '旋风人',
+            breeze_rod: '旋风棒',
             brewing_stand: '酿造台',
             brick: '红砖',
             brick_slab: '红砖台阶',
@@ -1930,6 +2027,7 @@
             brown_concrete_powder: '棕色混凝土粉末',
             brown_dye: '棕色染料',
             brown_glazed_terracotta: '棕色带釉陶瓦',
+            brown_mushroom: '棕色蘑菇',
             brown_mushroom_block: '棕色蘑菇方块',
             brown_stained_glass: '棕色染色玻璃',
             brown_stained_glass_pane: '棕色染色玻璃板',
@@ -1943,9 +2041,12 @@
             campfire: '篝火',
             candle: '蜡烛',
             carpet: '地毯',
+            carrot: '胡萝卜',
             carrot_on_a_stick: '胡萝卜钓竿',
             cartography_table: '制图台',
+            carved_pumpkin: '雕刻南瓜',
             cauldron: '炼药锅',
+            cave_spider: '洞穴蜘蛛',
             chain: '锁链',
             chainmail_boots: '锁链靴子',
             chainmail_chestplate: '锁链胸甲',
@@ -1957,16 +2058,20 @@
             cherry_door: '樱花木门',
             cherry_fence: '樱花木栅栏',
             cherry_fence_gate: '樱花木栅栏门',
+            cherry_leaves: '樱花树叶',
+            cherry_log: '樱花原木',
             cherry_planks: '樱花木板',
             cherry_pressure_plate: '樱花木压力板',
+            cherry_sapling: '樱花树苗',
             cherry_sign: '樱花木告示牌',
             cherry_slab: '樱花木台阶',
             cherry_stairs: '樱花木楼梯',
             cherry_trapdoor: '樱花木活板门',
             cherry_wood: '樱花木',
             chest: '箱子',
-            chest_minecart: '运输矿车',
             chest_boat: '运输船',
+            chest_minecart: '运输矿车',
+            chicken: '鸡',
             chiseled_bookshelf: '雕纹书架',
             chiseled_deepslate: '雕纹深板岩',
             chiseled_nether_bricks: '雕纹下界砖',
@@ -1975,10 +2080,14 @@
             chiseled_red_sandstone: '雕纹红砂岩',
             chiseled_sandstone: '雕纹砂岩',
             chiseled_stone_bricks: '雕纹石砖',
+            chiseled_tuff: '雕纹凝灰岩',
+            chiseled_tuff_bricks: '雕纹凝灰岩砖',
             chorus_flower: '紫颂花',
+            chorus_fruit: '紫颂果',
             clay: '黏土',
             clay_ball: '黏土球',
             clock: '时钟',
+            closed_eyeblossom: '闭合的眼眸花',
             coal: '煤炭',
             coal_block: '煤炭块',
             coal_ore: '煤矿石',
@@ -1991,6 +2100,9 @@
             cobblestone_slab: '圆石台阶',
             cobblestone_stairs: '圆石楼梯',
             cobblestone_wall: '圆石墙',
+            cobweb: '蜘蛛网',
+            cocoa_beans: '可可豆',
+            cod: '生鳕鱼',
             comparator: '红石比较器',
             compass: '指南针',
             composter: '堆肥桶',
@@ -2003,15 +2115,32 @@
             cooked_rabbit: '熟兔肉',
             cooked_salmon: '熟三文鱼',
             cookie: '曲奇',
+            copper_axe: '铜斧',
             copper_block: '铜块',
+            copper_boots: '铜靴子',
             copper_bulb: '铜灯',
+            copper_chestplate: '铜胸甲',
             copper_door: '铜门',
             copper_grate: '铜格栅',
+            copper_helmet: '铜头盔',
+            copper_hoe: '铜锄',
             copper_ingot: '铜锭',
+            copper_leggings: '铜护腿',
+            copper_ore: '铜矿石',
+            copper_pickaxe: '铜镐',
+            copper_shovel: '铜锹',
+            copper_sword: '铜剑',
             copper_trapdoor: '铜活板门',
+            cornflower: '矢车菊',
+            cow: '牛',
+            cracked_polished_blackstone_bricks: '裂纹磨制黑石砖',
             crafter: '合成器',
             crafting_table: '工作台',
+            creeper: '苦力怕',
+            crimson_fungus: '绯红菌',
+            crimson_roots: '绯红菌索',
             crossbow: '弩',
+            crying_obsidian: '哭泣的黑曜石',
             cut_copper: '切制铜块',
             cut_copper_slab: '切制铜台阶',
             cut_copper_stairs: '切制铜楼梯',
@@ -2029,13 +2158,17 @@
             cyan_stained_glass_pane: '青色染色玻璃板',
             cyan_terracotta: '青色陶瓦',
             cyan_wool: '青色羊毛',
+            damaged_anvil: '损坏的铁砧',
+            dandelion: '蒲公英',
             dark_oak_boat: '深色橡木船',
             dark_oak_button: '深色橡木按钮',
             dark_oak_door: '深色橡木门',
             dark_oak_fence: '深色橡木栅栏',
             dark_oak_fence_gate: '深色橡木栅栏门',
+            dark_oak_log: '深色橡木原木',
             dark_oak_planks: '深色橡木板',
             dark_oak_pressure_plate: '深色橡木压力板',
+            dark_oak_sapling: '深色橡木树苗',
             dark_oak_sign: '深色橡木告示牌',
             dark_oak_slab: '深色橡木台阶',
             dark_oak_stairs: '深色橡木楼梯',
@@ -2046,6 +2179,7 @@
             dark_prismarine_stairs: '暗海晶石楼梯',
             daylight_detector: '阳光探测器',
             decorated_pot: '饰纹陶罐',
+            deepslate: '深板岩',
             deepslate_brick_slab: '深板岩砖台阶',
             deepslate_brick_stairs: '深板岩砖楼梯',
             deepslate_brick_wall: '深板岩砖墙',
@@ -2065,49 +2199,74 @@
             diamond_leggings: '钻石护腿',
             diamond_pickaxe: '钻石镐',
             diamond_shovel: '钻石锹',
+            diamond_spear: '钻石矛',
             diamond_sword: '钻石剑',
             diorite: '闪长岩',
             dirt: '泥土',
             dispenser: '发射器',
+            donkey: '驴',
+            dragon_egg: '龙蛋',
+            dried_ghast: '干恶魂',
             dried_kelp: '干海带',
             dried_kelp_block: '干海带块',
             dripstone_block: '滴水石块',
             dropper: '投掷器',
+            drowned: '溺尸',
+            egg: '鸡蛋',
+            elytra: '鞘翅',
             emerald: '绿宝石',
             emerald_block: '绿宝石块',
+            enchanted_book: '附魔书',
+            enchanted_golden_apple: '附魔金苹果',
             enchanting_table: '附魔台',
             end_crystal: '末影水晶',
             end_rod: '末地烛',
+            end_stone: '末地石',
             end_stone_brick_slab: '末地石砖台阶',
             end_stone_brick_stairs: '末地石砖楼梯',
             end_stone_brick_wall: '末地石砖墙',
             end_stone_bricks: '末地石砖',
             ender_chest: '末影箱',
+            ender_dragon: '末影龙',
             ender_eye: '末影之眼',
+            ender_pearl: '末影珍珠',
+            enderman: '末影人',
+            endermite: '末影螨',
+            evoker: '唤魔者',
+            experience_bottle: '附魔之瓶',
             explosion_pottery_sherd: '爆炸纹样陶片',
             exposed_copper: '斑驳的铜块',
             exposed_cut_copper: '斑驳的切制铜块',
             exposed_cut_copper_slab: '斑驳的切制铜台阶',
             exposed_cut_copper_stairs: '斑驳的切制铜楼梯',
+            feather: '羽毛',
             fence: '栅栏',
             fence_gate: '栅栏门',
             fermented_spider_eye: '发酵蛛眼',
+            filled_map: '已探索的地图',
             fire_charge: '火焰弹',
+            firefly_bush: '萤火虫灌木',
             firework_rocket: '烟花火箭',
             firework_star: '烟火之星',
             fishing_rod: '钓鱼竿',
             fletching_table: '制箭台',
+            flint: '燧石',
             flint_and_steel: '打火石',
+            flow_armor_trim_smithing_template: '涡流盔甲纹饰锻造模板',
             flower_pot: '花盆',
+            frog: '青蛙',
             furnace: '熔炉',
             furnace_minecart: '动力矿车',
+            ghast: '恶魂',
+            ghast_tear: '恶魂之泪',
             glass: '玻璃',
             glass_bottle: '玻璃瓶',
             glass_pane: '玻璃板',
             glow_berries: '发光浆果',
-            glow_item_frame: '荧光物品展示框',
             glow_ink_sac: '荧光墨囊',
+            glow_item_frame: '荧光物品展示框',
             glowstone: '荧石',
+            glowstone_dust: '荧石粉',
             goat_horn: '山羊角',
             gold_block: '金块',
             gold_ingot: '金锭',
@@ -2119,11 +2278,14 @@
             golden_chestplate: '金胸甲',
             golden_helmet: '金头盔',
             golden_hoe: '金锄',
+            golden_horse_armor: '金马铠',
             golden_leggings: '金护腿',
             golden_pickaxe: '金镐',
             golden_shovel: '金锹',
             golden_sword: '金剑',
             granite: '花岗岩',
+            grass_block: '草方块',
+            gravel: '沙砾',
             gray_banner: '灰色旗帜',
             gray_bed: '灰色床',
             gray_carpet: '灰色地毯',
@@ -2145,6 +2307,9 @@
             green_terracotta: '绿色陶瓦',
             green_wool: '绿色羊毛',
             grindstone: '砂轮',
+            guardian: '守卫者',
+            gunpowder: '火药',
+            guster_banner_pattern: '旋风旗帜图案',
             hanging_sign: '悬挂式告示牌',
             hay_block: '干草块',
             heavy_weighted_pressure_plate: '重质测重压力板',
@@ -2154,19 +2319,27 @@
             honeycomb_block: '蜜脾块',
             hopper: '漏斗',
             hopper_minecart: '漏斗矿车',
+            horse: '马',
+            husk: '尸壳',
+            ice: '冰',
+            ink_sac: '墨囊',
             iron_axe: '铁斧',
             iron_bars: '铁栏杆',
             iron_block: '铁块',
             iron_boots: '铁靴子',
+            iron_chain: '铁链',
             iron_chestplate: '铁胸甲',
             iron_door: '铁门',
+            iron_golem: '铁傀儡',
             iron_helmet: '铁头盔',
             iron_hoe: '铁锄',
             iron_ingot: '铁锭',
             iron_leggings: '铁护腿',
             iron_nugget: '铁粒',
+            iron_ore: '铁矿石',
             iron_pickaxe: '铁镐',
             iron_shovel: '铁锹',
+            iron_spear: '铁矛',
             iron_sword: '铁剑',
             iron_trapdoor: '铁活板门',
             item_frame: '物品展示框',
@@ -2177,19 +2350,23 @@
             jungle_door: '丛林木门',
             jungle_fence: '丛林木栅栏',
             jungle_fence_gate: '丛林木栅栏门',
+            jungle_log: '丛林原木',
             jungle_planks: '丛林木板',
             jungle_pressure_plate: '丛林木压力板',
+            jungle_sapling: '丛林树苗',
             jungle_sign: '丛林木告示牌',
             jungle_slab: '丛林木台阶',
             jungle_stairs: '丛林木楼梯',
             jungle_trapdoor: '丛林木活板门',
             jungle_wood: '丛林木',
+            kelp: '海带',
             ladder: '梯子',
             lantern: '灯笼',
             lapis_block: '青金石块',
             lapis_lazuli: '青金石',
             lava_bucket: '熔岩桶',
             lead: '拴绳',
+            leaf_litter: '落叶',
             leather: '皮革',
             leather_boots: '皮革靴子',
             leather_chestplate: '皮革外套',
@@ -2219,6 +2396,7 @@
             light_gray_terracotta: '淡灰色陶瓦',
             light_gray_wool: '淡灰色羊毛',
             lightning_rod: '避雷针',
+            lily_pad: '睡莲',
             lime_banner: '黄绿色旗帜',
             lime_bed: '黄绿色床',
             lime_carpet: '黄绿色地毯',
@@ -2229,6 +2407,7 @@
             lime_stained_glass_pane: '黄绿色染色玻璃板',
             lime_terracotta: '黄绿色陶瓦',
             lime_wool: '黄绿色羊毛',
+            lingering_potion: '滞留药水',
             lodestone: '磁石',
             loom: '织布机',
             magenta_banner: '品红色旗帜',
@@ -2241,7 +2420,9 @@
             magenta_stained_glass_pane: '品红色染色玻璃板',
             magenta_terracotta: '品红色陶瓦',
             magenta_wool: '品红色羊毛',
+            magma_block: '岩浆块',
             magma_cream: '岩浆膏',
+            magma_cube: '岩浆怪',
             mangrove_boat: '红树木船',
             mangrove_button: '红树木按钮',
             mangrove_door: '红树木门',
@@ -2257,6 +2438,7 @@
             map: '空地图',
             melon: '西瓜',
             melon_seeds: '西瓜种子',
+            melon_slice: '西瓜片',
             milk_bucket: '奶桶',
             minecart: '矿车',
             moss_carpet: '苔藓地毯',
@@ -2273,6 +2455,14 @@
             mud_brick_wall: '泥砖墙',
             mud_bricks: '泥砖',
             mushroom_stew: '蘑菇煲',
+            music_disc_13: '音乐唱片 13',
+            music_disc_creator: '音乐唱片 creator',
+            music_disc_tears: '音乐唱片 tears',
+            mutton: '生羊肉',
+            mycelium: '菌丝体',
+            name_tag: '命名牌',
+            nautilus: '鹦鹉螺',
+            nautilus_shell: '鹦鹉螺壳',
             nether_brick: '下界砖',
             nether_brick_fence: '下界砖栅栏',
             nether_brick_slab: '下界砖台阶',
@@ -2280,6 +2470,8 @@
             nether_brick_wall: '下界砖墙',
             nether_bricks: '下界砖块',
             nether_star: '下界之星',
+            nether_wart: '下界疣',
+            nether_wart_block: '下界疣块',
             netherite_axe: '下界合金斧',
             netherite_block: '下界合金块',
             netherite_boots: '下界合金靴子',
@@ -2289,23 +2481,31 @@
             netherite_ingot: '下界合金锭',
             netherite_leggings: '下界合金护腿',
             netherite_pickaxe: '下界合金镐',
+            netherite_scrap: '下界合金碎片',
             netherite_shovel: '下界合金锹',
             netherite_sword: '下界合金剑',
             netherite_upgrade_smithing_template: '下界合金升级锻造模板',
+            netherrack: '下界岩',
             note_block: '音符盒',
             oak_boat: '橡木船',
             oak_button: '橡木按钮',
             oak_door: '橡木门',
             oak_fence: '橡木栅栏',
             oak_fence_gate: '橡木栅栏门',
+            oak_leaves: '橡树树叶',
+            oak_log: '橡木原木',
             oak_planks: '橡木板',
             oak_pressure_plate: '橡木压力板',
+            oak_sapling: '橡树树苗',
             oak_sign: '橡木告示牌',
             oak_slab: '橡木台阶',
             oak_stairs: '橡木楼梯',
             oak_trapdoor: '橡木活板门',
             oak_wood: '橡木',
             observer: '侦测器',
+            obsidian: '黑曜石',
+            ominous_bottle: '不祥之瓶',
+            ominous_trial_key: '不祥试炼钥匙',
             orange_banner: '橙色旗帜',
             orange_bed: '橙色床',
             orange_carpet: '橙色地毯',
@@ -2316,25 +2516,45 @@
             orange_stained_glass_pane: '橙色染色玻璃板',
             orange_terracotta: '橙色陶瓦',
             orange_wool: '橙色羊毛',
+            oxeye_daisy: '滨菊',
             oxidized_copper: '氧化的铜块',
+            oxidized_copper_chest: '氧化的铜箱子',
+            oxidized_copper_golem_statue: '氧化的铜傀儡雕像',
+            oxidized_copper_trapdoor: '氧化的铜活板门',
             oxidized_cut_copper: '氧化的切制铜块',
             oxidized_cut_copper_slab: '氧化的切制铜台阶',
             oxidized_cut_copper_stairs: '氧化的切制铜楼梯',
             packed_ice: '浮冰',
             packed_mud: '泥坯',
             painting: '画',
+            pale_moss_block: '苍白苔藓块',
+            pale_oak_fence_gate: '苍白橡木栅栏门',
+            pale_oak_log: '苍白橡木原木',
+            pale_oak_planks: '苍白橡木板',
+            pale_oak_sapling: '苍白橡木树苗',
+            pale_oak_trapdoor: '苍白橡木活板门',
             paper: '纸',
+            phantom: '幻翼',
+            phantom_membrane: '幻翼膜',
+            pig: '猪',
+            piglin: '猪灵',
+            piglin_brute: '猪灵蛮兵',
+            pillager: '掠夺者',
             pink_banner: '粉色旗帜',
             pink_bed: '粉色床',
             pink_carpet: '粉色地毯',
             pink_concrete_powder: '粉色混凝土粉末',
             pink_dye: '粉色染料',
             pink_glazed_terracotta: '粉色带釉陶瓦',
+            pink_petals: '粉红色花簇',
             pink_stained_glass: '粉色染色玻璃',
             pink_stained_glass_pane: '粉色染色玻璃板',
             pink_terracotta: '粉色陶瓦',
             pink_wool: '粉色羊毛',
             piston: '活塞',
+            player: '玩家',
+            pointed_dripstone: '滴水石锥',
+            poisonous_potato: '毒马铃薯',
             polished_andesite: '磨制安山岩',
             polished_andesite_slab: '磨制安山岩台阶',
             polished_andesite_stairs: '磨制安山岩楼梯',
@@ -2359,7 +2579,13 @@
             polished_granite: '磨制花岗岩',
             polished_granite_slab: '磨制花岗岩台阶',
             polished_granite_stairs: '磨制花岗岩楼梯',
+            polished_tuff: '磨制凝灰岩',
             popped_chorus_fruit: '爆裂紫颂果',
+            poppy: '虞美人',
+            porkchop: '生猪排',
+            potato: '马铃薯',
+            potion: '药水',
+            powder_snow_bucket: '细雪桶',
             powered_rail: '动力铁轨',
             prismarine: '海晶石',
             prismarine_brick_slab: '海晶石砖台阶',
@@ -2368,6 +2594,8 @@
             prismarine_slab: '海晶石台阶',
             prismarine_stairs: '海晶石楼梯',
             prismarine_wall: '海晶石墙',
+            pufferfish: '河豚',
+            pumpkin: '南瓜',
             pumpkin_pie: '南瓜派',
             pumpkin_seeds: '南瓜种子',
             purple_banner: '紫色旗帜',
@@ -2390,8 +2618,15 @@
             quartz_pillar: '石英柱',
             quartz_slab: '石英台阶',
             quartz_stairs: '石英楼梯',
+            rabbit: '兔子',
+            rabbit_foot: '兔子脚',
+            rabbit_hide: '兔子皮',
             rabbit_stew: '兔肉煲',
             rail: '铁轨',
+            raw_copper: '粗铜',
+            raw_gold: '粗金',
+            raw_iron: '粗铁',
+            raw_iron_block: '粗铁块',
             recovery_compass: '追溯指针',
             red_banner: '红色旗帜',
             red_bed: '红色床',
@@ -2399,6 +2634,7 @@
             red_concrete_powder: '红色混凝土粉末',
             red_dye: '红色染料',
             red_glazed_terracotta: '红色带釉陶瓦',
+            red_mushroom: '红色蘑菇',
             red_nether_brick_slab: '红色下界砖台阶',
             red_nether_brick_stairs: '红色下界砖楼梯',
             red_nether_brick_wall: '红色下界砖墙',
@@ -2416,17 +2652,35 @@
             redstone_lamp: '红石灯',
             redstone_torch: '红石火把',
             repeater: '红石中继器',
+            resin_clump: '树脂团',
             respawn_anchor: '重生锚',
+            rotten_flesh: '腐肉',
             saddle: '鞍',
+            salmon: '生三文鱼',
+            sand: '沙子',
+            sandstone: '砂岩',
             scaffolding: '脚手架',
+            scrape_pottery_sherd: '刮削纹样陶片',
+            sculk_catalyst: '幽匿催发体',
+            sculk_sensor: '幽匿感测体',
             sea_lantern: '海晶灯',
+            seagrass: '海草',
             shears: '剪刀',
+            sheep: '羊',
             shield: '盾牌',
+            shulker: '潜影贝',
             shulker_box: '潜影盒',
+            shulker_shell: '潜影壳',
             sign: '告示牌',
+            silverfish: '蠹虫',
+            skeleton: '骷髅',
+            skeleton_horse: '骷髅马',
+            slime: '史莱姆',
             slime_ball: '史莱姆球',
+            slime_block: '史莱姆方块',
             smithing_table: '锻造台',
             smoker: '烟熏炉',
+            smooth_basalt: '平滑玄武岩',
             smooth_quartz: '平滑石英块',
             smooth_quartz_slab: '平滑石英台阶',
             smooth_quartz_stairs: '平滑石英楼梯',
@@ -2438,13 +2692,25 @@
             smooth_sandstone_stairs: '平滑砂岩楼梯',
             smooth_stone: '平滑石头',
             smooth_stone_slab: '平滑石头台阶',
+            snout_armor_trim_smithing_template: '猪鼻盔甲纹饰锻造模板',
             snow: '雪',
             snow_block: '雪块',
+            snowball: '雪球',
             soul_campfire: '灵魂营火',
             soul_lantern: '灵魂灯笼',
+            soul_sand: '灵魂沙',
+            soul_soil: '灵魂土',
             soul_torch: '灵魂火把',
             spectral_arrow: '光灵箭',
+            spider: '蜘蛛',
+            spider_eye: '蜘蛛眼',
+            splash_potion: '喷溅药水',
+            spruce_log: '云杉原木',
+            spruce_planks: '云杉木板',
+            spruce_sapling: '云杉树苗',
+            spruce_stairs: '云杉木楼梯',
             spyglass: '望远镜',
+            squid: '鱿鱼',
             stick: '木棍',
             sticky_piston: '黏性活塞',
             stone: '石头',
@@ -2462,20 +2728,45 @@
             stone_stairs: '石头楼梯',
             stone_sword: '石剑',
             stonecutter: '切石机',
+            stray: '流浪者',
+            strider: '炽足兽',
             string: '线',
+            stripped_oak_log: '去皮橡木原木',
             sugar: '糖',
+            sugar_cane: '甘蔗',
             suspicious_stew: '迷之炖菜',
+            sweet_berries: '甜浆果',
             target: '标靶',
             terracotta: '陶瓦',
             tipped_arrow: '药箭',
             tnt: 'TNT',
             tnt_minecart: 'TNT矿车',
             torch: '火把',
+            totem_of_undying: '不死图腾',
+            trader_llama: '商队羊驼',
             trapped_chest: '陷阱箱',
+            trial_key: '试炼钥匙',
             tripwire_hook: '绊线钩',
+            tropical_fish: '热带鱼',
+            tuff: '凝灰岩',
+            tuff_bricks: '凝灰岩砖',
+            tuff_slab: '凝灰岩台阶',
+            turtle_egg: '海龟蛋',
             turtle_helmet: '海龟壳',
+            turtle_scute: '海龟鳞甲',
+            twisting_vines: '缠怨藤',
+            vex: '恼鬼',
+            villager: '村民',
+            vindicator: '卫道士',
+            wandering_trader: '流浪商人',
+            warden: '监守者',
+            warped_fungus: '诡异菌',
+            warped_fungus_on_a_stick: '诡异菌钓竿',
+            warped_roots: '诡异菌索',
+            warped_wart_block: '诡异疣块',
             water_bucket: '水桶',
             waxed_copper_block: '涂蜡铜块',
+            waxed_copper_grate: '涂蜡铜格栅',
             waxed_cut_copper: '涂蜡切制铜块',
             waxed_cut_copper_slab: '涂蜡切制铜台阶',
             waxed_cut_copper_stairs: '涂蜡切制铜楼梯',
@@ -2484,10 +2775,12 @@
             waxed_exposed_cut_copper_slab: '涂蜡斑驳切制铜台阶',
             waxed_exposed_cut_copper_stairs: '涂蜡斑驳切制铜楼梯',
             waxed_oxidized_copper: '涂蜡氧化铜块',
+            waxed_oxidized_copper_door: '涂蜡氧化铜门',
             waxed_oxidized_cut_copper: '涂蜡氧化切制铜块',
             waxed_oxidized_cut_copper_slab: '涂蜡氧化切制铜台阶',
             waxed_oxidized_cut_copper_stairs: '涂蜡氧化切制铜楼梯',
             waxed_weathered_copper: '涂蜡锈蚀铜块',
+            waxed_weathered_copper_bulb: '涂蜡锈蚀铜灯',
             waxed_weathered_cut_copper: '涂蜡锈蚀切制铜块',
             waxed_weathered_cut_copper_slab: '涂蜡锈蚀切制铜台阶',
             waxed_weathered_cut_copper_stairs: '涂蜡锈蚀切制铜楼梯',
@@ -2496,17 +2789,27 @@
             weathered_cut_copper_slab: '锈蚀的切制铜台阶',
             weathered_cut_copper_stairs: '锈蚀的切制铜楼梯',
             wheat: '小麦',
+            wheat_seeds: '小麦种子',
             white_banner: '白色旗帜',
             white_bed: '白色床',
             white_carpet: '白色地毯',
             white_concrete_powder: '白色混凝土粉末',
             white_dye: '白色染料',
             white_glazed_terracotta: '白色带釉陶瓦',
+            white_harness: '白色马具',
             white_stained_glass: '白色染色玻璃',
             white_stained_glass_pane: '白色染色玻璃板',
             white_terracotta: '白色陶瓦',
+            white_tulip: '白色郁金香',
             white_wool: '白色羊毛',
+            wildflowers: '野花',
             wind_charge: '风弹',
+            witch: '女巫',
+            wither: '凋灵',
+            wither_rose: '凋零玫瑰',
+            wither_skeleton: '凋灵骷髅',
+            wither_skeleton_skull: '凋灵骷髅头颅',
+            wolf: '狼',
             wooden_axe: '木斧',
             wooden_hoe: '木锄',
             wooden_pickaxe: '木镐',
@@ -2525,6 +2828,10 @@
             yellow_stained_glass_pane: '黄色染色玻璃板',
             yellow_terracotta: '黄色陶瓦',
             yellow_wool: '黄色羊毛',
+            zombie: '僵尸',
+            zombie_horse: '僵尸马',
+            zombie_villager: '僵尸村民',
+            zombified_piglin: '僵尸猪灵',
         };
 
         function getItemDisplayName(itemKey) {
@@ -2561,6 +2868,11 @@
                     } catch (e) {
                         console.warn('静态模式初始化物品合成Tab失败:', e);
                     }
+                    try {
+                        initItemsTab();
+                    } catch (e) {
+                        console.warn('静态模式初始化物品统计Tab失败:', e);
+                    }
                 }
             } else {
                 document.getElementById('noData').style.display = 'block';
@@ -2580,7 +2892,7 @@
         // Tab切换
         async function switchTab(tabName) {
             // 隐藏所有tab
-            ['dashboard', 'tab-battle', 'tab-craft', 'tab-scan', 'tab-manage'].forEach(id => {
+            ['dashboard', 'tab-battle', 'tab-craft', 'tab-items', 'tab-scan', 'tab-manage'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.style.display = 'none';
             });
@@ -2609,6 +2921,11 @@
                 if (el) el.style.display = 'block';
                 if (bc) bc.textContent = '物品合成';
                 await initCraftTab();
+            } else if (tabName === 'items') {
+                const el = document.getElementById('tab-items');
+                if (el) el.style.display = 'block';
+                if (bc) bc.textContent = '物品统计';
+                await initItemsTab();
             } else if (tabName === 'scan') {
                 const el = document.getElementById('tab-scan');
                 if (el) {
@@ -3209,6 +3526,279 @@
                 updateCraftFilterDisplay();
                 loadCraftChart();
                 loadTopCraftItemsTable();
+            });
+        }
+
+        // ================== 物品统计 ==================
+        let itemsData = null;
+        let selectedItemsPlayers = new Set();
+        let itemsCategory = 'picked_up';
+        let itemsAllPlayers = new Set();
+
+        async function initItemsTab() {
+            try {
+                if (!staticData) {
+                    if (isLocalServer) {
+                        const ok = await loadFromAPI();
+                        if (!ok) throw new Error('无法从 API 加载物品统计数据');
+                    } else {
+                        const ok = await loadStaticData();
+                        if (!ok) throw new Error('无法加载静态物品统计数据');
+                    }
+                }
+                initItemsTabCore();
+            } catch (error) {
+                console.error('加载物品统计数据失败:', error);
+            }
+        }
+
+        function initItemsTabCore() {
+            const data = staticData || {};
+            const chartsContainer = document.querySelector('#tab-items .charts-container');
+            if (!chartsContainer) {
+                console.error('找不到物品统计容器 (#tab-items .charts-container)');
+                return;
+            }
+
+            if (!data.item_stats || Object.keys(data.item_stats).length === 0) {
+                chartsContainer.innerHTML = `
+                    <div class="surface-card">
+                        <div class="loading">
+                            <span class="material-icons">info</span>
+                            <p>暂无物品统计数据，请先导入最新数据</p>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            itemsData = data.item_stats;
+            itemsAllPlayers.clear();
+
+            const playerStats = data.player_stats || {};
+            Object.values(playerStats).forEach(statData => {
+                Object.values(statData).forEach(dateData => {
+                    Object.keys(dateData || {}).forEach(player => itemsAllPlayers.add(player));
+                });
+            });
+
+            Object.values(itemsData).forEach(categoryData => {
+                Object.values(categoryData).forEach(dateData => {
+                    Object.keys(dateData || {}).forEach(player => itemsAllPlayers.add(player));
+                });
+            });
+
+            const defaultPlayers = ['MuxiAcio', 'RingOfficial', 'Roxy', 'hwj', 'roxy'];
+            selectedItemsPlayers = new Set(defaultPlayers.filter(p => itemsAllPlayers.has(p)));
+            if (selectedItemsPlayers.size === 0) {
+                selectedItemsPlayers = new Set(itemsAllPlayers);
+            }
+
+            initItemsPlayerFilter();
+            const containerEl = document.getElementById('itemsFilterContainer');
+            containerEl?.addEventListener('click', toggleItemsDropdown);
+
+            const canvas = document.getElementById('itemsChart');
+            if (canvas) loadItemsChart();
+            const topTable = document.getElementById('topItemsTable');
+            if (topTable) loadTopItemsTable();
+        }
+
+        function initItemsPlayerFilter() {
+            const dropdown = document.getElementById('itemsPlayerDropdown');
+            const sortedPlayers = Array.from(itemsAllPlayers).sort();
+            let html = '<div class="player-dropdown-item" data-value="all">全部玩家<span class="material-icons check-icon">check</span></div>';
+            sortedPlayers.forEach(player => {
+                const isSelected = selectedItemsPlayers.has(player);
+                html += `<div class="player-dropdown-item${isSelected ? ' selected' : ''}" data-value="${player}">${player}<span class="material-icons check-icon">check</span></div>`;
+            });
+            dropdown.innerHTML = html;
+            updateItemsFilterDisplay();
+        }
+
+        function updateItemsFilterDisplay() {
+            const display = document.getElementById('itemsFilterDisplay');
+            if (selectedItemsPlayers.size === 0 || selectedItemsPlayers.size === itemsAllPlayers.size) {
+                display.innerHTML = '<span class="player-filter-placeholder">全部玩家</span>';
+            } else {
+                const players = Array.from(selectedItemsPlayers).sort();
+                const visiblePlayers = players.slice(0, 5);
+                const remainingCount = players.length - 5;
+                let html = '';
+                visiblePlayers.forEach(player => {
+                    html += `<span class="player-badge">${player}<span class="remove-btn" onclick="removeItemsPlayer(event, '${player}')">×</span></span>`;
+                });
+                if (remainingCount > 0) {
+                    html += `<span class="player-filter-placeholder">+${remainingCount}...</span>`;
+                }
+                display.innerHTML = html;
+            }
+        }
+
+        function toggleItemsDropdown(event) {
+            event.stopPropagation();
+            const container = document.getElementById('itemsFilterContainer');
+            const dropdown = document.getElementById('itemsPlayerDropdown');
+            container.classList.toggle('open');
+            dropdown.classList.toggle('show');
+        }
+
+        function removeItemsPlayer(event, player) {
+            event.stopPropagation();
+            selectedItemsPlayers.delete(player);
+            updateItemsDropdownSelection();
+            updateItemsFilterDisplay();
+            loadItemsChart();
+            loadTopItemsTable();
+        }
+
+        function updateItemsDropdownSelection() {
+            document.querySelectorAll('#itemsPlayerDropdown .player-dropdown-item').forEach(item => {
+                const value = item.dataset.value;
+                if (value === 'all') {
+                    item.classList.toggle('selected', selectedItemsPlayers.size === itemsAllPlayers.size || selectedItemsPlayers.size === 0);
+                } else {
+                    item.classList.toggle('selected', selectedItemsPlayers.has(value));
+                }
+            });
+        }
+
+        function selectItemsCategory(category) {
+            itemsCategory = category;
+            document.querySelectorAll('#tab-items .stat-type-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.category === category);
+            });
+            const titles = { picked_up: '拾取物品统计', dropped: '丢弃物品统计', used: '使用物品统计' };
+            document.getElementById('itemsChartTitle').textContent = titles[category] || '物品统计';
+            loadItemsChart();
+            loadTopItemsTable();
+        }
+
+        function loadItemsChart() {
+            const data = itemsData[itemsCategory] || {};
+            const dates = Object.keys(data).sort();
+            const filteredPlayers = Array.from(selectedItemsPlayers).sort();
+            const colors = generateColorPairs(filteredPlayers.length + 1);
+
+            const datasets = filteredPlayers.map((player, index) => ({
+                label: player,
+                data: dates.map(date => {
+                    const playerData = data[date]?.[player] || {};
+                    return Object.values(playerData).reduce((sum, val) => sum + val, 0);
+                }),
+                borderColor: colors[index] ? colors[index].border : '#888',
+                backgroundColor: colors[index] ? colors[index].bg : 'rgba(0,0,0,0.08)',
+                tension: 0.4
+            }));
+
+            const totalData = dates.map(date => {
+                return filteredPlayers.reduce((sum, player) => {
+                    const playerData = data[date]?.[player] || {};
+                    return sum + Object.values(playerData).reduce((s, v) => s + v, 0);
+                }, 0);
+            });
+            datasets.push({
+                label: '总计',
+                data: totalData,
+                borderColor: '#7C4DFF',
+                backgroundColor: 'rgba(124, 77, 255, 0.1)',
+                borderWidth: 3,
+                tension: 0.4,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                hidden: true
+            });
+
+            if (charts.items) charts.items.destroy();
+            const ctx = document.getElementById('itemsChart').getContext('2d');
+            charts.items = new Chart(ctx, {
+                type: 'bar',
+                data: { labels: dates, datasets: datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                padding: 20,
+                                font: { size: 12 }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: '数量' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function loadTopItemsTable() {
+            const data = itemsData[itemsCategory] || {};
+            const dates = Object.keys(data).sort();
+            const filteredPlayers = Array.from(selectedItemsPlayers);
+
+            const itemTotals = {};
+            filteredPlayers.forEach(player => {
+                dates.forEach(date => {
+                    const playerData = data[date]?.[player] || {};
+                    Object.entries(playerData).forEach(([item, count]) => {
+                        itemTotals[item] = (itemTotals[item] || 0) + count;
+                    });
+                });
+            });
+
+            const topItems = Object.entries(itemTotals)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+
+            let html = '<table><thead><tr><th>排名</th><th>物品</th><th>总数</th></tr></thead><tbody>';
+            topItems.forEach(([item, total], index) => {
+                const rankClass = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : 'default';
+                html += `<tr>
+                    <td><span class="rank-badge ${rankClass}">${index + 1}</span></td>
+                    <td><span title="${item}">${getItemDisplayName(item)}</span></td>
+                    <td>${total}</td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+
+            const el = document.getElementById('topItemsTable');
+            if (el) el.innerHTML = html;
+        }
+
+        const itemsDropdown = document.getElementById('itemsPlayerDropdown');
+        if (itemsDropdown) {
+            itemsDropdown.addEventListener('click', function(event) {
+                event.stopPropagation();
+                const item = event.target.closest('.player-dropdown-item');
+                if (!item) return;
+
+                const value = item.dataset.value;
+                if (value === 'all') {
+                    selectedItemsPlayers = new Set(itemsAllPlayers);
+                } else {
+                    if (selectedItemsPlayers.size === itemsAllPlayers.size) {
+                        selectedItemsPlayers = new Set([value]);
+                    } else if (selectedItemsPlayers.has(value)) {
+                        selectedItemsPlayers.delete(value);
+                        if (selectedItemsPlayers.size === 0) {
+                            selectedItemsPlayers = new Set(itemsAllPlayers);
+                        }
+                    } else {
+                        selectedItemsPlayers.add(value);
+                    }
+                }
+
+                updateItemsDropdownSelection();
+                updateItemsFilterDisplay();
+                loadItemsChart();
+                loadTopItemsTable();
             });
         }
 
