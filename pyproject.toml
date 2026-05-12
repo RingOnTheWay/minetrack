@@ -1,0 +1,13 @@
+[project]
+name = "mc-stats"
+version = "0.2.0"
+description = "Minecraft服务器数据统计系统 - 分层架构"
+requires-python = ">=3.9"
+dependencies = [
+    "flask>=3.0.0",
+    "flask-cors>=4.0.0",
+    "waitress>=3.0.0",
+]
+
+[project.scripts]
+mc-stats = "backend.main:main"

@@ -17,19 +17,24 @@ venv/
 .DS_Store
 Thumbs.db
 
-# 本地开发文件（不需要推送到仓库）
-mc_stats_server.py
-requirements.txt
-pyproject.toml
-uv.lock
-server_example/
+# Frontend
+frontend/node_modules/
+frontend/dist/
 
-# Claude 相关文件
+# Claude
 .claude/
 .claude_history/
 CLAUDE.md
 claude-*
 
-# 其他
+# Trae
+.trae-backup/
+.trae/
+
+# Local dev
+server_example/
+uv.lock
+
+# Other
 *.db.bak
 *.log

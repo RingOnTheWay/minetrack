@@ -1,0 +1,82 @@
+{
+  "app": {
+    "title": "MC Stats",
+    "subtitle": "Minecraft 服务器统计"
+  },
+  "nav": {
+    "dashboard": "仪表盘",
+    "mapStats": "地图统计",
+    "playerStats": "玩家统计",
+    "battleStats": "战斗统计",
+    "craftStats": "合成统计",
+    "itemStats": "物品统计",
+    "activity": "活动统计"
+  },
+  "common": {
+    "loading": "加载中...",
+    "noData": "暂无数据",
+    "allPlayers": "全部玩家",
+    "filterPlayers": "筛选玩家",
+    "selectAll": "全选",
+    "deselectAll": "清空",
+    "viewDetail": "查看详情 →",
+    "topN": "Top {n}"
+  },
+  "dashboard": {
+    "totalDays": "统计天数",
+    "playerCount": "玩家数量",
+    "dateRange": "日期范围",
+    "mapTrend": "地图大小趋势",
+    "latestMap": "最新地图大小"
+  },
+  "map": {
+    "title": "地图大小变化",
+    "world": "主世界",
+    "nether": "下界",
+    "end": "末地",
+    "unit": "大小 (MB)"
+  },
+  "battle": {
+    "title": "战斗统计",
+    "killed": "击杀",
+    "killed_by": "被杀",
+    "topMobs": "击杀排行 Top {n}"
+  },
+  "craft": {
+    "title": "合成统计",
+    "crafted": "合成",
+    "used": "使用",
+    "topItems": "合成排行 Top {n}"
+  },
+  "item": {
+    "title": "物品统计",
+    "picked_up": "拾取",
+    "dropped": "丢弃",
+    "used": "使用",
+    "topItems": "物品排行 Top {n}"
+  },
+  "activity": {
+    "title": "活动统计",
+    "sprint": "冲刺",
+    "walk": "行走",
+    "fly": "飞行",
+    "climb": "攀爬",
+    "swim": "游泳",
+    "horse": "骑马",
+    "boat": "划船",
+    "aviate": "鞘翅飞行",
+    "fall": "坠落"
+  },
+  "playerStats": {
+    "playTime": "游戏时长 (小时)",
+    "deaths": "死亡次数",
+    "mobKills": "击杀怪物",
+    "playerKills": "击杀玩家",
+    "jumps": "跳跃次数",
+    "distanceWalked": "行走距离 (km)"
+  },
+  "lang": {
+    "switchTo": "English",
+    "current": "中文"
+  }
+}

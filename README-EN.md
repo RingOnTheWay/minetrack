@@ -2,11 +2,15 @@
 
 # MC Stats - Minecraft Server Data Statistics
 
-**A Minecraft server data statistics panel based on Flask + Chart.js**
+**Vue 3 + Flask layered architecture Minecraft server data statistics panel**
 
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](https://opensource.org/licenses/MIT)
 [![Python](https://img.shields.io/badge/Python-3.9+-blue?style=flat-square)](https://www.python.org/)
-[![Flask](https://img.shields.io/badge/Flask-2.0+-lightgray?style=flat-square)](https://flask.palletsprojects.com/)
+[![Flask](https://img.shields.io/badge/Flask-3.0+-lightgray?style=flat-square)](https://flask.palletsprojects.com/)
+[![Vue](https://img.shields.io/badge/Vue-3.4+-4FC08D?style=flat-square)](https://vuejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=flat-square)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-5.0+-646CFF?style=flat-square)](https://vitejs.dev/)
+[![Pinia](https://img.shields.io/badge/Pinia-2.0+-FFD859?style=flat-square)](https://pinia.vuejs.org/)
 [![Chart.js](https://img.shields.io/badge/Chart.js-4.0+-orange?style=flat-square)](https://www.chartjs.org/)
 [![Demo](https://img.shields.io/badge/Demo-Online-blue?style=flat-square)](https://ringontheway.github.io/mc-stats/)
 
@@ -16,7 +20,7 @@
 
 ⭐ If you like this project, please give it a Star on GitHub — Thank you!
 
-[Features](#features) • [Quick Start](#quick-start) • [API Endpoints](#api-endpoints) • [Tech Stack](#tech-stack) • [Project Structure](#project-structure)
+[Features](#features) • [Quick Start](#quick-start) • [API Endpoints](#api-endpoints) • [Tech Stack](#tech-stack) • [Project Structure](#project-structure) • [Frontend Routes](#frontend-routes)
 
 </div>
 
@@ -24,14 +28,23 @@
 
 ## Overview
 
-MC Stats is a Minecraft server data statistics panel based on Flask + Chart.js, supporting two modes: local data scanning import and static page deployment. It covers comprehensive data visualization including map size trends, player statistics, battle statistics, item crafting, item pickups/drops/usage, and player activity statistics.
+MC Stats is a Minecraft server data statistics panel built with Vue 3 + Flask layered architecture, supporting two modes: local data scanning import and static page deployment. It covers comprehensive data visualization including map size trends, player statistics, battle statistics, item crafting, item pickups/drops/usage, and player activity statistics.
 
 ## Features
 
 ### Dashboard
+- 📊 Overview: total days, player count, date range
+- 📈 Quick navigation to all statistics pages
+- 🗺️ Latest map sizes at a glance
+
+### Map Statistics
 - 📈 Map size trends (Overworld / Nether / End line charts)
-- 👥 Player statistics (play time, deaths, mob kills)
-- 🔍 Multi-player filtering and comparison, auto-show-all when none selected
+- 🔍 Multi-player filtering and comparison
+
+### Player Statistics
+- 👥 16 data categories: play time, deaths, mob/player kills, jumps, damage dealt, and movement distances
+- 📊 Line charts with stat type switching
+- 🔍 Multi-player filtering and comparison
 
 ### Battle Statistics
 - ⚔️ Mob kill ranking (filtered by player)
@@ -49,8 +62,8 @@ MC Stats is a Minecraft server data statistics panel based on Flask + Chart.js, 
 - 👤 Multi-player filtering support
 
 ### Activity Statistics
-- 🏃‍♂️ 11 activity types: sprint, walk, fly, climb, swim, horse, boat, aviate, jump, fall, player kills
-- 📊 Date trend bar chart with drill-down to individual activities
+- 🏃‍♂️ 9 activity types: sprint, walk, fly, climb, swim, horse, boat, elytra, fall
+- 📊 Date trend bar chart with activity type switching
 - 👤 Multi-player filtering support
 
 ### Data Scanning (Local Mode)
@@ -58,112 +71,227 @@ MC Stats is a Minecraft server data statistics panel based on Flask + Chart.js, 
 - 📁 Batch import: select parent folder, auto-detect dates in subfolders
 
 ### Data Management (Local Mode)
-- 🗑️ Delete single day data: Material You style dropdown date selection
-- 🧹 Batch delete: Chips style multi-select component with select all/remove individual
+- 🗑️ Delete single day data
+- 🧹 Batch delete data for multiple dates
 
 ## Quick Start
 
-### 1. Initialize UV Virtual Environment
+### Requirements
+
+- **Python** >= 3.9
+- **Node.js** >= 18
+- **uv** ([Installation Guide](https://docs.astral.sh/uv/getting-started/installation/))
+
+### 1. Initialize Backend
 
 ```bash
-uv init
-uv add flask flask-cors
+uv sync
 ```
 
-### 2. Start Local Server
+### 2. Start Backend Server
 
 ```bash
-uv run python mc_stats_server.py
+uv run python backend/main.py
 ```
 
-Access `http://localhost:5000` to use all features (including data scanning and management).
+Backend runs at `http://localhost:5000`.
 
-### 3. Export Data and Push to GitHub
+### 3. Initialize and Start Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Frontend runs at `http://localhost:5173`, automatically proxying API requests to the backend.
+
+### 4. Export Static Data for GitHub Pages
 
 ```bash
 uv run python scripts/export_data.py
-git add data.json
-git commit -m "Update data"
-git push origin main
 ```
 
-### 4. Deploy as Static Page (GitHub Pages)
+Deploy `frontend/dist/` to GitHub Pages.
 
-Enable GitHub Pages in your repository's **Settings → Pages** (select main branch).
+> In static mode, the frontend loads data from `data.json`. Data scanning and management features are not available.
 
-> In static mode, "Data Scanning" and "Data Management" tabs are automatically hidden. All data tabs (Dashboard / Battle / Craft / Items / Activity) work normally.
-
-## API Endpoints (Local Mode)
+## API Endpoints
 
 | Method | Path | Description |
 |:-------|:-----|:------------|
-| GET | `/api/map_sizes` | Get map size data |
-| GET | `/api/player_stats?type=` | Get player stats (see type list below) |
-| GET | `/api/battle_stats?category=` | Get battle stats (killed / killed_by) |
-| GET | `/api/battle_stats/summary?category=` | Get battle stats summary (Top ranking) |
-| GET | `/api/craft_stats?category=` | Get crafting stats (crafted / used) |
-| GET | `/api/item_stats?category=` | Get item stats (picked_up / dropped / used) |
-| DELETE | `/api/delete_date` | Delete all data for specified date |
-| DELETE | `/api/batch_delete` | Batch delete data for multiple dates |
 | GET | `/api/dates` | Get all recorded dates |
+| GET | `/api/map_sizes` | Get map size data |
+| GET | `/api/player_stats?type=` | Get player stats (16 types, see below) |
+| GET | `/api/stats/:domain?category=` | Detail stats (domain: battle/craft/item) |
+| GET | `/api/stats/:domain/summary?category=&limit=` | Stats summary Top N (default limit=10) |
+| POST | `/api/scan` | `{"folder":"...","date":"..."}` Scan a single folder |
+| POST | `/api/batch_scan` | `{"parent_folder":"..."}` Batch scan parent folder |
+| POST | `/api/export` | Export data to JSON |
+| DELETE | `/api/delete_date` | `{"date":"..."}` Delete data for a date |
+| DELETE | `/api/batch_delete` | `{"dates":["...","..."]}` Batch delete dates |
 
-**player_stats supported type values:** `play_time`, `deaths`, `mob_kills`, `player_kills`, `jumps`, `distance_walked`, `sprint_one_cm`, `walk_one_cm`, `fly_one_cm`, `climb_one_cm`, `swim_one_cm`, `horse_one_cm`, `boat_one_cm`, `aviate_one_cm`, `fall_one_cm`
+> Backward compatible: `/api/battle_stats`, `/api/craft_stats`, `/api/item_stats`, `/api/battle_summary` are still available, all mapped to the unified `/api/stats/:domain` interface.
 
-## Data Export Script
+**player_stats supported type values:** `play_time`, `deaths`, `mob_kills`, `player_kills`, `jumps`, `damage_dealt`, `distance_walked`, `sprint_one_cm`, `walk_one_cm`, `fly_one_cm`, `climb_one_cm`, `swim_one_cm`, `horse_one_cm`, `boat_one_cm`, `aviate_one_cm`, `fall_one_cm`
+
+## Data Export
 
 ```bash
 uv run python scripts/export_data.py
 ```
 
-Reads from `mc_stats.db` and exports to `data.json`, containing the following parts:
+Reads from `mc_stats.db` and exports to `data.json`.
 
-- `map_sizes` — Map sizes (Overworld / Nether / End, unit: MB)
-- `player_stats` — Comprehensive player statistics (organized by stat_type, covering 15 categories including time/kills/activity distance)
-- `battle_stats` — Battle statistics (mob kills / killed by mobs)
-- `craft_stats` — Item crafting/usage statistics
-- `item_stats` — Item pickups/drops/usage statistics
+## Data Migration (Upgrade from Legacy)
+
+If upgrading from the legacy monolithic architecture (`mc_stats_server.py`):
+
+```bash
+uv run python scripts/migrate_db.py
+```
+
+This script merges the old `battle_stats` / `craft_stats` / `item_stats` tables into the unified `detail_stats` table.
 
 ## Tech Stack
 
 | Component | Technology |
 |:----------|:----------:|
-| Frontend | Native HTML/CSS/JS + Chart.js 4 |
-| Icons | Google Material Icons |
+| Frontend Framework | Vue 3 + TypeScript (Composition API) |
+| Build Tool | Vite 5 |
+| Chart Library | Chart.js 4 + vue-chartjs |
+| Internationalization | vue-i18n |
+| State Management | Pinia |
 | UI Style | Material You Design |
-| Backend | Python Flask + SQLite |
-| Package Manager | uv (Python) |
-| Deployment | Flask local server + GitHub Pages |
+| Backend | Python Flask 3 (Layered Architecture) |
+| Database | SQLite (WAL Mode) |
+| Package Manager | uv (Python) + npm (Node.js) |
+| Deployment | Flask local server / GitHub Pages |
 
 ## Project Structure
 
 ```
 stat/
-├── index.html              # Frontend page (Material You Design, all-in-one HTML)
-├── chart.js                # Chart.js library
-├── data.json               # Exported static statistics (for GitHub Pages)
-├── mc_stats.db             # SQLite database (auto-generated in local mode)
-├── mc_stats_server.py      # Flask backend server
-├── pyproject.toml          # UV project configuration
-├── uv.lock                 # UV dependency lock file
-├── .gitignore              # Git ignore rules
+├── frontend/                          # Vue 3 + Vite Frontend
+│   ├── src/
+│   │   ├── main.ts                    # Vue entry point
+│   │   ├── App.vue                    # Root component
+│   │   ├── router/index.ts            # Vue Router configuration
+│   │   ├── stores/
+│   │   │   ├── app.ts                 # Global state (mode/loading)
+│   │   │   └── data.ts                # Statistics data state management
+│   │   ├── services/
+│   │   │   ├── api.ts                 # API call layer
+│   │   │   └── usePlayerFilter.ts     # Player filter composable
+│   │   ├── i18n/
+│   │   │   ├── index.ts               # vue-i18n configuration
+│   │   │   ├── zh-CN.json             # Chinese translations
+│   │   │   └── en-US.json             # English translations
+│   │   ├── components/
+│   │   │   ├── AppLayout.vue          # Layout container
+│   │   │   ├── Sidebar.vue            # Sidebar navigation
+│   │   │   ├── TopBar.vue             # Top navigation bar
+│   │   │   └── PlayerFilter.vue       # Player filter component
+│   │   └── pages/
+│   │       ├── DashboardPage.vue      # Dashboard overview
+│   │       ├── MapStatsPage.vue       # Map statistics
+│   │       ├── PlayerStatsPage.vue    # Player statistics
+│   │       ├── BattleStatsPage.vue    # Battle statistics
+│   │       ├── CraftStatsPage.vue     # Crafting statistics
+│   │       ├── ItemStatsPage.vue      # Item statistics
+│   │       └── ActivityPage.vue       # Activity statistics
+│   ├── public/
+│   ├── index.html
+│   ├── package.json
+│   ├── vite.config.ts
+│   └── tsconfig.json
+│
+├── backend/                           # Flask Layered Backend
+│   ├── app.py                         # Flask app factory
+│   ├── config.py                      # Configuration management
+│   ├── main.py                        # Entry point
+│   ├── database/
+│   │   ├── __init__.py
+│   │   ├── init.py                    # Database initialization + Schema
+│   │   └── repositories.py           # Repository data access layer
+│   ├── services/
+│   │   ├── parser.py                  # Universal stats parser
+│   │   ├── scanner.py                 # Server folder scanner
+│   │   └── exporter.py               # Data export service
+│   └── routes/
+│       └── api.py                     # All API Blueprint routes
+│
+├── locales/                           # Standalone translation files (static mode)
+│   ├── zh-CN.json
+│   └── en-US.json
 ├── scripts/
-│   └── export_data.py      # Database → JSON export script
-├── README.md               # Documentation (Chinese)
-└── README-EN.md            # Documentation (English)
+│   ├── export_data.py                 # Data export script
+│   └── migrate_db.py                 # Data migration script
+├── assets/
+│   └── icon.png
+├── mc_stats.db                        # SQLite database
+├── data.json                          # Exported static data
+├── pyproject.toml                     # UV project configuration
+├── .gitignore
+├── README.md
+└── README-EN.md
 ```
+
+## Architecture Design
+
+### Backend Layers
+
+```
+routes/api.py     ← HTTP request handling (Flask Blueprint)
+    ↓
+services/         ← Business logic (parsing / scanning / exporting)
+    ↓
+database/         ← Repository pattern data access layer
+    ↓
+mc_stats.db       ← SQLite database (WAL mode)
+```
+
+### Frontend State Management
+
+```
+pages/            ← Vue page components (lazy-loaded by route)
+    ↓
+components/       ← Reusable UI components
+    ↓
+stores/           ← Pinia Stores (app + data)
+    ↓
+services/api.ts   ← Unified API calls (auto-switch local/static mode)
+```
+
+## Frontend Routes
+
+| Path | Page Component | Description |
+|:-----|:---------------|:------------|
+| `#/` | DashboardPage | Dashboard overview |
+| `#/map` | MapStatsPage | Map size trends |
+| `#/players` | PlayerStatsPage | 16 player data categories |
+| `#/battle` | BattleStatsPage | Battle kill statistics |
+| `#/craft` | CraftStatsPage | Item crafting statistics |
+| `#/items` | ItemStatsPage | Pickup/drop/use statistics |
+| `#/activity` | ActivityPage | 9 activity distance statistics |
+
+> Uses Hash router (`createWebHashHistory`) for GitHub Pages static deployment compatibility.
 
 ## Development Notes
 
-- Frontend automatically detects running mode: `localhost:5000` for local server mode, otherwise static page mode
-- Local mode loads data from API automatically, static mode loads from `data.json`
-- Navigation is disabled during data loading to prevent async race conditions
-- Server scans Minecraft stats from `stats/` directory, auto-parsing `minecraft:custom`, `minecraft:killed`, `minecraft:crafted`, `minecraft:used`, `minecraft:picked_up`, `minecraft:dropped` statistic types
-- Item Chinese translation map (itemNameMap) is built into `index.html`, covering 930+ Minecraft items/entities with official Chinese names
-- Local development files like `mc_stats_server.py`, `mc_stats.db` are excluded in `.gitignore`
+- The frontend proxies `/api/*` requests to the Flask backend at `localhost:5000` via Vite proxy
+- In static mode, the frontend reads `data.json` from root; place it in `frontend/public/` during build
+- The database uses SQLite WAL mode for improved concurrent read/write performance
+- The `detail_stats` table unifies battle/craft/item statistics via the `stat_domain` field; adding a new stat type only requires writing data with a new domain
+- The backend `services/parser.py` provides a generic `parse_detail_stats_by_domain()` function that accepts a domain and categories dict to parse any stat type
+- `services/scanner.py` batch scanning auto-detects dates from folder names (supports `YYYY-MM-DD`, `YYYY.MM.DD`, `MM.DD` formats)
+- `scripts/migrate_db.py` merges legacy tables (battle_stats / craft_stats / item_stats) into detail_stats, then drops old tables
 
 ## Acknowledgments
 
-- [Chart.js](https://www.chartjs.org/) - Powerful open-source chart library providing data visualization support
+- [Chart.js](https://www.chartjs.org/) - Powerful open-source chart library
+- [Vue.js](https://vuejs.org/) - The Progressive JavaScript Framework
+- [Flask](https://flask.palletsprojects.com/) - Python micro framework
 
 ## License
 

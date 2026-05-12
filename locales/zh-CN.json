@@ -1,0 +1,20 @@
+{
+  "app": {
+    "title": "MC Stats",
+    "subtitle": "Minecraft 服务器统计"
+  },
+  "nav": {
+    "dashboard": "仪表盘",
+    "mapStats": "地图统计",
+    "playerStats": "玩家统计",
+    "battleStats": "战斗统计",
+    "craftStats": "合成统计",
+    "itemStats": "物品统计",
+    "activity": "活动统计"
+  },
+  "common": {
+    "loading": "加载中...",
+    "noData": "暂无数据",
+    "allPlayers": "全部玩家"
+  }
+}

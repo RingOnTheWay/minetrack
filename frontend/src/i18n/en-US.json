@@ -1,0 +1,82 @@
+{
+  "app": {
+    "title": "MC Stats",
+    "subtitle": "Minecraft Server Statistics"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "mapStats": "Map Stats",
+    "playerStats": "Player Stats",
+    "battleStats": "Battle Stats",
+    "craftStats": "Craft Stats",
+    "itemStats": "Item Stats",
+    "activity": "Activity"
+  },
+  "common": {
+    "loading": "Loading...",
+    "noData": "No Data",
+    "allPlayers": "All Players",
+    "filterPlayers": "Filter Players",
+    "selectAll": "Select All",
+    "deselectAll": "Deselect All",
+    "viewDetail": "View Detail →",
+    "topN": "Top {n}"
+  },
+  "dashboard": {
+    "totalDays": "Total Days",
+    "playerCount": "Player Count",
+    "dateRange": "Date Range",
+    "mapTrend": "Map Size Trend",
+    "latestMap": "Latest Map Size"
+  },
+  "map": {
+    "title": "Map Size Over Time",
+    "world": "Overworld",
+    "nether": "Nether",
+    "end": "The End",
+    "unit": "Size (MB)"
+  },
+  "battle": {
+    "title": "Battle Stats",
+    "killed": "Killed",
+    "killed_by": "Killed By",
+    "topMobs": "Top {n} Kills"
+  },
+  "craft": {
+    "title": "Craft Stats",
+    "crafted": "Crafted",
+    "used": "Used",
+    "topItems": "Top {n} Crafted"
+  },
+  "item": {
+    "title": "Item Stats",
+    "picked_up": "Picked Up",
+    "dropped": "Dropped",
+    "used": "Used",
+    "topItems": "Top {n} Items"
+  },
+  "activity": {
+    "title": "Activity Stats",
+    "sprint": "Sprint",
+    "walk": "Walk",
+    "fly": "Fly",
+    "climb": "Climb",
+    "swim": "Swim",
+    "horse": "Horse",
+    "boat": "Boat",
+    "aviate": "Elytra",
+    "fall": "Fall"
+  },
+  "playerStats": {
+    "playTime": "Play Time (hours)",
+    "deaths": "Deaths",
+    "mobKills": "Mob Kills",
+    "playerKills": "Player Kills",
+    "jumps": "Jumps",
+    "distanceWalked": "Walk Distance (km)"
+  },
+  "lang": {
+    "switchTo": "中文",
+    "current": "English"
+  }
+}
