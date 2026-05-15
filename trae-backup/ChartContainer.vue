@@ -8,6 +8,7 @@ import {
   GridComponent, TooltipComponent, LegendComponent,
   DataZoomComponent
 } from 'echarts/components'
+import { useAppStore } from '@/stores/app'
 
 use([CanvasRenderer, LineChart, BarChart, GridComponent, TooltipComponent, LegendComponent, DataZoomComponent])
 
@@ -31,8 +32,11 @@ const props = withDefaults(defineProps<{
   height: '350px',
 })
 
+const app = useAppStore()
+
 const option = computed(() => {
   const isArea = props.chartType === 'line'
+  const dark = app.isDark
 
   const seriesList = props.series.map((s) => {
     const base: any = {
@@ -58,8 +62,8 @@ const option = computed(() => {
           type: 'linear',
           x: 0, y: 0, x2: 0, y2: 1,
           colorStops: [
-            { offset: 0, color: s.color + '80' },
-            { offset: 1, color: s.color + '08' },
+            { offset: 0, color: s.color + (dark ? 'a0' : '80') },
+            { offset: 1, color: s.color + (dark ? '18' : '08') },
           ],
         },
       }
@@ -80,12 +84,12 @@ const option = computed(() => {
         type: 'line',
         lineStyle: { color: '#d1ddd1', type: 'dashed' },
       },
-      backgroundColor: 'rgba(255,255,255,0.95)',
-      borderColor: 'rgba(119,153,119,0.2)',
+      backgroundColor: dark ? 'rgba(30,41,59,0.95)' : 'rgba(255,255,255,0.95)',
+      borderColor: dark ? 'rgba(119,153,119,0.3)' : 'rgba(119,153,119,0.2)',
       borderWidth: 1,
       padding: [12, 16],
-      textStyle: { color: '#334155', fontSize: 12 },
-      extraCssText: 'border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.08);backdrop-filter:blur(12px);',
+      textStyle: { color: dark ? '#e2e8f0' : '#334155', fontSize: 12 },
+      extraCssText: 'border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.08);backdrop-filter:blur(12px);' + (dark ? 'color:#e2e8f0;' : ''),
     },
     legend: {
       bottom: 0,
@@ -93,7 +97,7 @@ const option = computed(() => {
       itemWidth: 8,
       itemHeight: 8,
       itemGap: 20,
-      textStyle: { fontSize: 12, color: '#64748b' },
+      textStyle: { fontSize: 12, color: dark ? '#94a3b8' : '#64748b' },
     },
     grid: {
       left: 10,
@@ -106,18 +110,18 @@ const option = computed(() => {
       type: 'category',
       data: props.labels,
       boundaryGap: props.chartType === 'bar',
-      axisLine: { lineStyle: { color: '#e2e8f0' } },
+      axisLine: { lineStyle: { color: dark ? '#334155' : '#e2e8f0' } },
       axisTick: { show: false },
-      axisLabel: { color: '#94a3b8', fontSize: 12 },
+      axisLabel: { color: dark ? '#64748b' : '#94a3b8', fontSize: 12 },
     },
     yAxis: {
       type: 'value',
       name: props.yAxisLabel || '',
-      nameTextStyle: { color: '#94a3b8', fontSize: 12, padding: [0, 0, 0, -20] },
+      nameTextStyle: { color: dark ? '#64748b' : '#94a3b8', fontSize: 12, padding: [0, 0, 0, -20] },
       axisLine: { show: false },
       axisTick: { show: false },
-      axisLabel: { color: '#94a3b8', fontSize: 12 },
-      splitLine: { lineStyle: { color: '#d1ddd1', type: 'dashed' } },
+      axisLabel: { color: dark ? '#64748b' : '#94a3b8', fontSize: 12 },
+      splitLine: { lineStyle: { color: dark ? '#1e3a1e' : '#d1ddd1', type: 'dashed' } },
     },
     series: seriesList,
     animationDuration: 800,

@@ -125,7 +125,7 @@ const option = computed(() => {
     },
     series: seriesList,
     animationDuration: 800,
-    animationEasing: 'cubicOut',
+    animationEasing: 'cubicOut' as const,
   }
 })
 </script>
