@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useDataStore } from '@/stores/data'
+import { useAppStore } from '@/stores/app'
 import { usePlayerFilter } from '@/services/usePlayerFilter'
 import { useI18n } from 'vue-i18n'
 import ChartContainer from '@/components/ChartContainer.vue'
@@ -24,6 +25,7 @@ const STAT_TRANSFORM: Record<string, ((v: number) => number) | null> = {
 }
 
 const data = useDataStore()
+const app = useAppStore()
 const filter = usePlayerFilter(data.allPlayers)
 const currentKey = ref<string>('play_time')
 
@@ -62,14 +64,14 @@ const chartSeries = computed<ChartSeries[]>(() => {
       fill: false,
       strokeWidth: 2,
     })),
-    {
+    ...(app.showChartTotal ? [{
       name: locale.value === 'zh-CN' ? '总计' : 'Total',
       data: dates.map(date => transformValue(currentKey.value, players.reduce((sum, p) => sum + (statData[date]?.[p] || 0), 0))),
       color: '#FF6B6B',
       type: 'line' as const,
       fill: false,
       strokeWidth: 3,
-    },
+    }] : []),
   ]
 })
 </script>

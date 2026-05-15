@@ -86,15 +86,15 @@ const rankColors = ['#FFD700', '#C0C0C0', '#CD7F32']
 
     <PlayerFilter :filter="filter" />
 
-    <div class="relative bg-white/70 backdrop-blur-sm rounded-2xl p-8 border border-white/80 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group">
-      <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-brand/5 to-transparent rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+    <div class="relative bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-8 border border-white/80 dark:border-slate-700/80 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group">
+      <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-brand/5 dark:from-brand/3 to-transparent rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
       <div class="relative">
         <div class="flex items-center gap-4 mb-6">
-          <div class="w-12 h-12 bg-gradient-to-br from-brand/20 to-brand/10 rounded-xl flex items-center justify-center">
-            <Package class="w-6 h-6 text-brand" />
+          <div class="w-12 h-12 bg-gradient-to-br from-brand/20 dark:from-brand/20 to-brand/10 dark:to-brand/15 rounded-xl flex items-center justify-center">
+            <Package class="w-6 h-6 text-brand dark:text-brand-light" />
           </div>
-          <h3 class="text-lg font-semibold text-slate-800">{{ categoryLabel[category] }}</h3>
+          <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">{{ categoryLabel[category] }}</h3>
         </div>
 
         <ChartContainer
@@ -106,38 +106,39 @@ const rankColors = ['#FFD700', '#C0C0C0', '#CD7F32']
       </div>
     </div>
 
-    <div class="relative bg-white/70 backdrop-blur-sm rounded-2xl p-8 border border-white/80 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group">
-      <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-brand/5 to-transparent rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+    <div class="relative bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-8 border border-white/80 dark:border-slate-700/80 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group">
+      <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-brand/5 dark:from-brand/3 to-transparent rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
       <div class="relative">
         <div class="flex items-center gap-4 mb-6">
-          <div class="w-12 h-12 bg-gradient-to-br from-brand/20 to-brand/10 rounded-xl flex items-center justify-center">
-            <Trophy class="w-6 h-6 text-brand" />
+          <div class="w-12 h-12 bg-gradient-to-br from-brand/20 dark:from-brand/20 to-brand/10 dark:to-brand/15 rounded-xl flex items-center justify-center">
+            <Trophy class="w-6 h-6 text-brand dark:text-brand-light" />
           </div>
-          <h3 class="text-lg font-semibold text-slate-800">{{ t('common.topN', { n: 10 }) }}</h3>
+          <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">{{ t('common.topN', { n: 10 }) }}</h3>
         </div>
 
-        <div class="overflow-hidden rounded-xl border border-slate-100">
+        <div class="overflow-hidden rounded-xl border border-slate-100 dark:border-slate-700">
           <table class="w-full">
             <thead>
-              <tr class="bg-slate-50/80">
-                <th class="px-4 py-3 text-left text-sm font-medium text-slate-600">#</th>
-                <th class="px-4 py-3 text-left text-sm font-medium text-slate-600">{{ t('common.item') }}</th>
-                <th class="px-4 py-3 text-right text-sm font-medium text-slate-600">{{ t('common.count') }}</th>
+              <tr class="bg-slate-50/80 dark:bg-slate-800/80">
+                <th class="px-4 py-3 text-left text-sm font-medium text-slate-600 dark:text-slate-400">#</th>
+                <th class="px-4 py-3 text-left text-sm font-medium text-slate-600 dark:text-slate-400">{{ t('common.item') }}</th>
+                <th class="px-4 py-3 text-right text-sm font-medium text-slate-600 dark:text-slate-400">{{ t('common.count') }}</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(item, i) in topItems" :key="item.key" class="border-t border-slate-100 hover:bg-slate-50/50 transition-colors">
+              <tr v-for="(item, i) in topItems" :key="item.key" class="border-t border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors">
                 <td class="px-4 py-3">
                   <span
                     class="inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold"
-                    :style="{ background: i < 3 ? rankColors[i] : '#f1f5f9', color: i < 3 ? '#000' : '#64748b' }"
+                    :class="i >= 3 ? 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400 dark:ring-1 dark:ring-slate-600' : ''"
+                    :style="i < 3 ? { background: rankColors[i], color: '#000' } : undefined"
                   >
                     {{ i + 1 }}
                   </span>
                 </td>
-                <td class="px-4 py-3 text-sm text-slate-700">{{ item.name }}</td>
-                <td class="px-4 py-3 text-sm font-medium text-slate-900 text-right">{{ item.count }}</td>
+                <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">{{ item.name }}</td>
+                <td class="px-4 py-3 text-sm font-medium text-slate-900 dark:text-slate-50 text-right">{{ item.count }}</td>
               </tr>
             </tbody>
           </table>

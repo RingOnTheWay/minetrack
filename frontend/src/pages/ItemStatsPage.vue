@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useDataStore } from '@/stores/data'
+import { useAppStore } from '@/stores/app'
 import { usePlayerFilter } from '@/services/usePlayerFilter'
 import { useI18n } from 'vue-i18n'
 import { getItemName } from '@/i18n/items'
@@ -11,6 +12,7 @@ import PlayerFilter from '@/components/PlayerFilter.vue'
 
 const { t, locale } = useI18n()
 const data = useDataStore()
+const app = useAppStore()
 const filter = usePlayerFilter(data.allPlayers)
 const category = ref<'picked_up' | 'dropped' | 'used'>('picked_up')
 
@@ -47,7 +49,7 @@ const chartSeries = computed<ChartSeries[]>(() => {
       color: colors[i] || '#888',
       type: 'bar' as const,
     })),
-    { name: t('common.total'), data: ds.map(date => players.reduce((sum, p) => { const pd = sd[date]?.[p] || {}; return sum + Object.values(pd as Record<string, number>).reduce((s, v) => s + v, 0) }, 0)), color: '#FF6B6B', type: 'bar' as const },
+    ...(app.showChartTotal ? [{ name: t('common.total'), data: ds.map(date => players.reduce((sum, p) => { const pd = sd[date]?.[p] || {}; return sum + Object.values(pd as Record<string, number>).reduce((s, v) => s + v, 0) }, 0)), color: '#FF6B6B', type: 'bar' as const }] : []),
   ]
 })
 

@@ -105,6 +105,8 @@
     "themeColorDesc": "Choose your favorite theme color with instant preview",
     "navItems": "Navigation Items",
     "navItemsDesc": "Customize which items appear in the sidebar navigation",
+    "chartTotal": "Show Chart Total",
+    "chartTotalDesc": "Display total data line in statistics charts by default",
     "about": "About",
     "aboutDesc": "App and author information",
     "author": "Author",

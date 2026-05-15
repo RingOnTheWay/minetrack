@@ -105,6 +105,8 @@
     "themeColorDesc": "选择你喜欢的主题色，即时预览效果",
     "navItems": "导航栏项目",
     "navItemsDesc": "自定义左侧导航栏显示的功能项",
+    "chartTotal": "图表显示总计",
+    "chartTotalDesc": "在统计图表中默认显示总计数据线",
     "about": "关于",
     "aboutDesc": "应用与作者信息",
     "author": "作者",

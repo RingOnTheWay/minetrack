@@ -91,6 +91,14 @@ export const useAppStore = defineStore('app', () => {
 
   const navVisibility = ref<Record<NavKey, boolean>>(loadNavVisibility())
 
+  const showChartTotal = ref<boolean>((() => {
+    try {
+      const stored = localStorage.getItem('showChartTotal')
+      if (stored !== null) return stored === 'true'
+    } catch {}
+    return false
+  })())
+
   const currentTheme = computed<ThemeColor>(() => findPreset(themeColorPrimary.value))
   const isLocal = computed(() => mode.value === 'local')
   const isStatic = computed(() => mode.value === 'static')
@@ -122,6 +130,10 @@ export const useAppStore = defineStore('app', () => {
     return navVisibility.value[key]
   }
 
+  function toggleChartTotal() {
+    showChartTotal.value = !showChartTotal.value
+  }
+
   watch(darkMode, (val) => {
     applyDarkMode(val)
     try {
@@ -142,6 +154,12 @@ export const useAppStore = defineStore('app', () => {
       localStorage.setItem('navVisibility', JSON.stringify(val))
     } catch {}
   }, { deep: true })
+
+  watch(showChartTotal, (val) => {
+    try {
+      localStorage.setItem('showChartTotal', String(val))
+    } catch {}
+  })
 
   function initialize() {
     const searchParams = new URLSearchParams(window.location.search)
@@ -171,6 +189,7 @@ export const useAppStore = defineStore('app', () => {
     darkMode,
     themeColorPrimary,
     navVisibility,
+    showChartTotal,
     currentTheme,
     isLocal,
     isStatic,
@@ -183,5 +202,6 @@ export const useAppStore = defineStore('app', () => {
     setThemeColor,
     toggleNavVisibility,
     isNavVisible,
+    toggleChartTotal,
   }
 })

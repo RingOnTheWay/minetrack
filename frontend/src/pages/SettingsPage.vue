@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore, themePresets } from '@/stores/app'
 import type { NavKey } from '@/stores/app'
-import { Palette, User, Code, ExternalLink, Check, Scale, Calendar, LayoutList, Lock } from 'lucide-vue-next'
+import { Palette, User, Code, ExternalLink, Check, Scale, Calendar, LayoutList, Lock, BarChart3 } from 'lucide-vue-next'
 import {
   LayoutDashboard, Map, Users, Swords, Hammer, Package, TrendingUp,
   Database,
@@ -164,6 +164,38 @@ function toggleNav(key: NavKey) {
               />
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      v-motion-slide-bottom="{ delay: 75 }"
+      class="relative bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-8 border border-white/80 dark:border-slate-700/80 shadow-sm overflow-hidden"
+    >
+      <div class="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-brand/5 dark:from-brand/3 to-transparent rounded-full blur-3xl" />
+
+      <div class="relative">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-gradient-to-br from-brand/20 to-brand/10 rounded-xl flex items-center justify-center">
+              <BarChart3 class="w-6 h-6 text-brand dark:text-brand-light" />
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">{{ t('settings.chartTotal') }}</h3>
+              <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('settings.chartTotalDesc') }}</p>
+            </div>
+          </div>
+
+          <button
+            class="relative w-12 h-7 rounded-full transition-all duration-300"
+            :class="app.showChartTotal ? 'bg-brand' : 'bg-slate-300 dark:bg-slate-600'"
+            @click="app.toggleChartTotal()"
+          >
+            <div
+              class="absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-sm transition-all duration-300"
+              :class="app.showChartTotal ? 'left-5.5' : 'left-0.5'"
+            />
+          </button>
         </div>
       </div>
     </div>
