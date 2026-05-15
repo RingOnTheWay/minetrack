@@ -103,6 +103,8 @@
     "subtitle": "Personalization & app info",
     "themeColor": "Theme Color",
     "themeColorDesc": "Choose your favorite theme color with instant preview",
+    "navItems": "Navigation Items",
+    "navItemsDesc": "Customize which items appear in the sidebar navigation",
     "about": "About",
     "aboutDesc": "App and author information",
     "author": "Author",

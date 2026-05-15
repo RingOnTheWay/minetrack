@@ -9,7 +9,7 @@ import {
   Database, Languages, Moon, Sun
 } from 'lucide-vue-next'
 
-const iconUrl = '/icon.png'
+import iconUrl from '/icon.png'
 
 const { t, locale } = useI18n()
 const router = useRouter()

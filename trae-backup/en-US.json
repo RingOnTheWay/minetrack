@@ -1,6 +1,6 @@
 {
   "app": {
-    "title": "MC Stats",
+    "title": "MineTrack",
     "subtitle": "Minecraft Server Statistics"
   },
   "nav": {
@@ -11,7 +11,8 @@
     "craftStats": "Craft Stats",
     "itemStats": "Item Stats",
     "activity": "Activity",
-    "dataManage": "Data Manage"
+    "dataManage": "Data Manage",
+    "settings": "Settings"
   },
   "common": {
     "loading": "Loading...",
@@ -94,6 +95,22 @@
     "switchTo": "中文",
     "current": "English"
   },
+  "theme": {
+    "dark": "Dark",
+    "light": "Light"
+  },
+  "settings": {
+    "subtitle": "Personalization & app info",
+    "themeColor": "Theme Color",
+    "themeColorDesc": "Choose your favorite theme color with instant preview",
+    "about": "About",
+    "aboutDesc": "App and author information",
+    "author": "Author",
+    "license": "License",
+    "projectRepo": "Repository",
+    "version": "Version",
+    "buildDate": "Build Date"
+  },
   "dataManage": {
     "importTab": "Import",
     "deleteTab": "Delete",
@@ -149,6 +166,7 @@
     "deleteAll": "Delete All Data",
     "deleteAllHint": "This will clear all statistics data from the database. This action cannot be undone.",
     "deleteAllSuccess": "All data deleted",
-    "operationFailed": "Operation failed"
+    "operationFailed": "Operation failed",
+    "deleteAllConfirm": "Confirm Delete All Data"
   }
 }

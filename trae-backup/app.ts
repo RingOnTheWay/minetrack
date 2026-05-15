@@ -39,7 +39,7 @@ export const useAppStore = defineStore('app', () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  const darkMode = ref<boolean>(() => {
+  const darkMode = ref<boolean>((() => {
     try {
       const stored = localStorage.getItem('darkMode')
       if (stored !== null) return stored === 'true'
@@ -47,15 +47,15 @@ export const useAppStore = defineStore('app', () => {
     } catch {
       return false
     }
-  })
+  })())
 
-  const themeColorPrimary = ref<string>(() => {
+  const themeColorPrimary = ref<string>((() => {
     try {
       const stored = localStorage.getItem('themeColor')
       if (stored !== null) return stored
     } catch {}
     return '#779977'
-  })
+  })())
 
   const currentTheme = computed<ThemeColor>(() => findPreset(themeColorPrimary.value))
   const isLocal = computed(() => mode.value === 'local')

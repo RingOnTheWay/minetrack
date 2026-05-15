@@ -34,6 +34,38 @@ function applyThemeColor(theme: ThemeColor) {
   root.style.setProperty('--brand-dark', theme.dark)
 }
 
+export type NavKey = '/' | '/map' | '/players' | '/battle' | '/craft' | '/items' | '/activity' | '/data-manage'
+
+const ALL_NAV_KEYS: NavKey[] = ['/', '/map', '/players', '/battle', '/craft', '/items', '/activity', '/data-manage']
+
+const DEFAULT_NAV_VISIBILITY: Record<NavKey, boolean> = {
+  '/': true,
+  '/map': true,
+  '/players': true,
+  '/battle': true,
+  '/craft': true,
+  '/items': true,
+  '/activity': true,
+  '/data-manage': true,
+}
+
+function loadNavVisibility(): Record<NavKey, boolean> {
+  try {
+    const stored = localStorage.getItem('navVisibility')
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      const result = { ...DEFAULT_NAV_VISIBILITY }
+      for (const key of ALL_NAV_KEYS) {
+        if (typeof parsed[key] === 'boolean') {
+          result[key] = parsed[key]
+        }
+      }
+      return result
+    }
+  } catch {}
+  return { ...DEFAULT_NAV_VISIBILITY }
+}
+
 export const useAppStore = defineStore('app', () => {
   const mode = ref<'local' | 'static'>('local')
   const loading = ref(false)
@@ -57,6 +89,8 @@ export const useAppStore = defineStore('app', () => {
     return '#779977'
   })())
 
+  const navVisibility = ref<Record<NavKey, boolean>>(loadNavVisibility())
+
   const currentTheme = computed<ThemeColor>(() => findPreset(themeColorPrimary.value))
   const isLocal = computed(() => mode.value === 'local')
   const isStatic = computed(() => mode.value === 'static')
@@ -78,6 +112,16 @@ export const useAppStore = defineStore('app', () => {
     themeColorPrimary.value = primary
   }
 
+  function toggleNavVisibility(key: NavKey) {
+    if (key === '/data-manage' && isStatic) return
+    navVisibility.value[key] = !navVisibility.value[key]
+  }
+
+  function isNavVisible(key: NavKey): boolean {
+    if (key === '/data-manage' && isStatic) return false
+    return navVisibility.value[key]
+  }
+
   watch(darkMode, (val) => {
     applyDarkMode(val)
     try {
@@ -92,6 +136,12 @@ export const useAppStore = defineStore('app', () => {
       localStorage.setItem('themeColor', val)
     } catch {}
   }, { immediate: true })
+
+  watch(navVisibility, (val) => {
+    try {
+      localStorage.setItem('navVisibility', JSON.stringify(val))
+    } catch {}
+  }, { deep: true })
 
   function initialize() {
     const searchParams = new URLSearchParams(window.location.search)
@@ -120,6 +170,7 @@ export const useAppStore = defineStore('app', () => {
     error,
     darkMode,
     themeColorPrimary,
+    navVisibility,
     currentTheme,
     isLocal,
     isStatic,
@@ -130,5 +181,7 @@ export const useAppStore = defineStore('app', () => {
     setError,
     toggleDarkMode,
     setThemeColor,
+    toggleNavVisibility,
+    isNavVisible,
   }
 })

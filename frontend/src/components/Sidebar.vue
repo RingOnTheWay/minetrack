@@ -4,6 +4,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDataStore } from '@/stores/data'
 import { useAppStore } from '@/stores/app'
+import type { NavKey } from '@/stores/app'
 import {
   LayoutDashboard, Map, Users, Swords, Hammer, Package, TrendingUp,
   Database, Languages, Moon, Sun
@@ -17,16 +18,18 @@ const route = useRoute()
 const data = useDataStore()
 const app = useAppStore()
 
-const menuItems = computed(() => [
-  { icon: LayoutDashboard, label: t('nav.dashboard'), path: '/', badge: null },
-  { icon: Map, label: t('nav.mapStats'), path: '/map', badge: null },
-  { icon: Users, label: t('nav.playerStats'), path: '/players', badge: data.allPlayers.size > 0 ? String(data.allPlayers.size) : null },
-  { icon: Swords, label: t('nav.battleStats'), path: '/battle', badge: null },
-  { icon: Hammer, label: t('nav.craftStats'), path: '/craft', badge: null },
-  { icon: Package, label: t('nav.itemStats'), path: '/items', badge: null },
-  { icon: TrendingUp, label: t('nav.activity'), path: '/activity', badge: null },
-  { icon: Database, label: t('nav.dataManage'), path: '/data-manage', badge: null },
+const allMenuItems = computed(() => [
+  { icon: LayoutDashboard, label: t('nav.dashboard'), path: '/' as NavKey, badge: null },
+  { icon: Map, label: t('nav.mapStats'), path: '/map' as NavKey, badge: null },
+  { icon: Users, label: t('nav.playerStats'), path: '/players' as NavKey, badge: data.allPlayers.size > 0 ? String(data.allPlayers.size) : null },
+  { icon: Swords, label: t('nav.battleStats'), path: '/battle' as NavKey, badge: null },
+  { icon: Hammer, label: t('nav.craftStats'), path: '/craft' as NavKey, badge: null },
+  { icon: Package, label: t('nav.itemStats'), path: '/items' as NavKey, badge: null },
+  { icon: TrendingUp, label: t('nav.activity'), path: '/activity' as NavKey, badge: null },
+  { icon: Database, label: t('nav.dataManage'), path: '/data-manage' as NavKey, badge: null },
 ])
+
+const menuItems = computed(() => allMenuItems.value.filter(item => app.isNavVisible(item.path)))
 
 const currentPath = computed(() => route.path)
 const isSettingsPage = computed(() => route.path === '/settings')

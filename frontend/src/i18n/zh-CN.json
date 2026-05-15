@@ -103,6 +103,8 @@
     "subtitle": "个性化与应用信息",
     "themeColor": "主题色",
     "themeColorDesc": "选择你喜欢的主题色，即时预览效果",
+    "navItems": "导航栏项目",
+    "navItemsDesc": "自定义左侧导航栏显示的功能项",
     "about": "关于",
     "aboutDesc": "应用与作者信息",
     "author": "作者",
