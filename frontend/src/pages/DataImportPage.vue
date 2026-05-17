@@ -266,7 +266,9 @@ async function browseTo(path: string) {
   folderBrowserLoading.value = true
   folderBrowserError.value = ''
   try {
-    const data = await apiGet<any>('/api/browse', path ? { path } : undefined)
+    const params: Record<string, string> = { _: String(Date.now()) }
+    if (path) params.path = path
+    const data = await apiGet<any>('/api/browse', params)
     folderBrowserPath.value = data.path
     folderBrowserParent.value = data.parent
     folderBrowserIsRoot.value = data.is_root
