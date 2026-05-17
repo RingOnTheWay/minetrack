@@ -100,6 +100,9 @@ MineTrack is a Minecraft server data statistics panel built with Vue 3 + Flask l
 - 🎨 9 theme color presets (Emerald / Amber / Teal / Rose / Sky / HotPink / Gold / Navy / Crimson)
 - 🌙 Dark mode (follows system preference or manual toggle)
 - 🌐 Bilingual switching (language preference persisted to localStorage)
+- 📊 Chart total display toggle
+- 👥 Legend player count: set the maximum number of player data lines shown in charts (default 10)
+- 🔀 Player import filter: master switch, minimum playtime, whitelist, blacklist (see "Player Import Filter" above)
 
 ## Quick Start
 
@@ -109,13 +112,19 @@ MineTrack is a Minecraft server data statistics panel built with Vue 3 + Flask l
 - **Node.js** >= 18
 - **uv** ([Installation Guide](https://docs.astral.sh/uv/getting-started/installation/))
 
-### 1. Initialize Backend
+### Option 1: One-Click Start (Windows)
+
+Double-click `start.bat` to automatically check dependencies, start backend and frontend servers, and open the browser.
+
+### Option 2: Manual Start
+
+#### 1. Initialize Backend
 
 ```bash
 uv sync
 ```
 
-### 2. Start Backend Server
+#### 2. Start Backend Server
 
 ```bash
 uv run python backend/main.py
@@ -123,7 +132,7 @@ uv run python backend/main.py
 
 Backend runs at `http://localhost:5000`.
 
-### 3. Initialize and Start Frontend
+#### 3. Initialize and Start Frontend
 
 ```bash
 cd frontend
@@ -133,7 +142,7 @@ npm run dev
 
 Frontend runs at `http://localhost:5173`, automatically proxying API requests to the backend.
 
-### 4. Export Static Data for GitHub Pages
+#### 4. Export Static Data for GitHub Pages
 
 ```bash
 uv run python scripts/export_data.py
@@ -145,22 +154,22 @@ Deploy `frontend/dist/` to GitHub Pages.
 
 ## API Endpoints
 
-| Method | Path                                          | Description                                          |
-|:------ |:--------------------------------------------- |:---------------------------------------------------- |
-| GET    | `/api/dates`                                  | Get all recorded dates                               |
-| GET    | `/api/map_sizes`                              | Get map size data                                    |
-| GET    | `/api/player_stats?type=`                     | Get player stats (16 types, see below)               |
-| GET    | `/api/stats/:domain?category=`                | Detail stats (domain: battle/craft/item)             |
-| GET    | `/api/stats/:domain/summary?category=&limit=` | Stats summary Top N (default limit=10)               |
-| GET    | `/api/browse?path=`                           | Browse directories (Windows drive enumeration)        |
-| POST   | `/api/scan`                                   | `{"folder":"..."}` Scan a single folder              |
-| POST   | `/api/batch_scan`                             | `{"parent_folder":"..."}` Batch scan parent folder   |
-| POST   | `/api/export`                                 | Export data to JSON                                  |
-| DELETE | `/api/delete_date`                            | `{"date":"..."}` Delete data for a date              |
-| DELETE | `/api/batch_delete`                           | `{"dates":["...","..."]}` Batch delete dates         |
-| DELETE | `/api/delete_all`                             | Delete all data                                      |
-| GET    | `/api/settings`                               | Get filter settings                                  |
-| POST   | `/api/settings`                               | Update filter settings                               |
+| Method | Path                                          | Description                                                                                         |
+|:------ |:--------------------------------------------- |:--------------------------------------------------------------------------------------------------- |
+| GET    | `/api/dates`                                  | Get all recorded dates                                                                              |
+| GET    | `/api/map_sizes`                              | Get map size data                                                                                   |
+| GET    | `/api/player_stats?type=`                     | Get player stats (16 types, see below)                                                              |
+| GET    | `/api/stats/:domain?category=`                | Detail stats (domain: battle/craft/item)                                                            |
+| GET    | `/api/stats/:domain/summary?category=&limit=` | Stats summary Top N (default limit=10)                                                              |
+| GET    | `/api/browse?path=`                           | Browse directories (Windows drive enumeration)                                                      |
+| POST   | `/api/scan`                                   | `{"folder":"..."}` Scan a single folder                                                             |
+| POST   | `/api/batch_scan`                             | `{"parent_folder":"..."}` Batch scan parent folder                                                  |
+| POST   | `/api/export`                                 | Export data to JSON                                                                                 |
+| DELETE | `/api/delete_date`                            | `{"date":"..."}` Delete data for a date                                                             |
+| DELETE | `/api/batch_delete`                           | `{"dates":["...","..."]}` Batch delete dates                                                        |
+| DELETE | `/api/delete_all`                             | Delete all data                                                                                     |
+| GET    | `/api/settings`                               | Get all settings (filter_enabled / min_playtime_hours / whitelist / blacklist / max_legend_players) |
+| POST   | `/api/settings`                               | Update settings (allowed keys same as above)                                                        |
 
 > Backward compatible: `/api/battle_stats`, `/api/craft_stats`, `/api/item_stats`, `/api/battle_summary` are still available, all mapped to the unified `/api/stats/:domain` interface.
 
@@ -201,7 +210,7 @@ stat/
 │   │   ├── App.vue                    # Root component
 │   │   ├── router/index.ts            # Vue Router (Hash mode)
 │   │   ├── stores/
-│   │   │   ├── app.ts                 # Global state (mode/dark mode/theme color)
+│   │   │   ├── app.ts                 # Global state (mode/dark mode/theme color/chart settings/legend count)
 │   │   │   └── data.ts                # Statistics data state (dual-mode loading)
 │   │   ├── services/
 │   │   │   ├── api.ts                 # API call layer (auto-switch local/static mode)
@@ -258,6 +267,7 @@ stat/
 │   └── icon.png
 ├── minetrack.db                       # SQLite database
 ├── data.json                          # Exported static data
+├── start.bat                          # Windows one-click start script
 ├── pyproject.toml                     # UV project configuration
 ├── .gitignore
 ├── README.md
@@ -292,17 +302,17 @@ services/api.ts   ← Unified API calls (auto-switch local/static mode)
 
 ## Frontend Routes
 
-| Path             | Page Component  | Description                         |
-|:---------------- |:--------------- |:----------------------------------- |
-| `#/`             | DashboardPage   | Dashboard overview                  |
-| `#/map`          | MapStatsPage    | Map size trends                     |
-| `#/players`      | PlayerStatsPage | 6 core player data categories       |
-| `#/battle`       | BattleStatsPage | Battle kill statistics              |
-| `#/craft`        | CraftStatsPage  | Item crafting statistics            |
-| `#/items`        | ItemStatsPage   | Pickup/drop/use statistics          |
-| `#/activity`     | ActivityPage    | 9 activity distance statistics      |
-| `#/data-manage`  | DataImportPage  | Data import and delete management   |
-| `#/settings`     | SettingsPage    | Theme color / dark mode / about     |
+| Path            | Page Component  | Description                                                      |
+|:--------------- |:--------------- |:---------------------------------------------------------------- |
+| `#/`            | DashboardPage   | Dashboard overview                                               |
+| `#/map`         | MapStatsPage    | Map size trends                                                  |
+| `#/players`     | PlayerStatsPage | 6 core player data categories                                    |
+| `#/battle`      | BattleStatsPage | Battle kill statistics                                           |
+| `#/craft`       | CraftStatsPage  | Item crafting statistics                                         |
+| `#/items`       | ItemStatsPage   | Pickup/drop/use statistics                                       |
+| `#/activity`    | ActivityPage    | 9 activity distance statistics                                   |
+| `#/data-manage` | DataImportPage  | Data import and delete management                                |
+| `#/settings`    | SettingsPage    | Theme color / dark mode / chart settings / player filter / about |
 
 > Uses Hash router (`createWebHashHistory`) for GitHub Pages static deployment compatibility.
 
@@ -315,11 +325,11 @@ services/api.ts   ← Unified API calls (auto-switch local/static mode)
 - The backend `services/parser.py` provides a generic `parse_detail_stats_by_domain()` function that accepts a domain and categories dict to parse any stat type
 - `services/scanner.py` batch scanning auto-detects dates from folder names (supports `YYYY-MM-DD`, `YYYY.MM.DD`, `YYYY_MM_DD`, `MM.DD` formats), with three-level fallback: server.properties → folder name → modification time
 - Theme colors switch in real-time via CSS custom properties `--color-brand` / `--brand`, all components and charts respond
-- Language preference, dark mode, and theme color selection are persisted to localStorage
+- Language preference, dark mode, theme color selection, chart total display, and legend player count are persisted to localStorage
 - Player import filter settings are persisted to the database `settings` table (key-value structure), supporting whitelist/blacklist/minimum playtime filtering
 - Whitelist and blacklist are mutually exclusive: adding to one auto-removes from the other; when whitelist is not empty, only whitelisted players are imported
-- Player filter uses golden angle distribution (137.508°) algorithm for high-contrast color generation
-- ECharts is loaded on-demand: CanvasRenderer, LineChart, BarChart, GridComponent, TooltipComponent, LegendComponent, DataZoomComponent
+- Legend player count setting controls the maximum number of series displayed in charts (default 10)
+- ECharts tooltip custom formatter: sorted by value descending, shows top 10 items with overflow indicator
 
 ## Acknowledgments
 
