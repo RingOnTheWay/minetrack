@@ -35,6 +35,7 @@ export interface FilterConfig {
   min_playtime_hours: string
   whitelist: string
   blacklist: string
+  max_legend_players: string
 }
 
 export async function getSettings(): Promise<FilterConfig> {

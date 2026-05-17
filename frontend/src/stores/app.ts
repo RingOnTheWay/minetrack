@@ -99,6 +99,14 @@ export const useAppStore = defineStore('app', () => {
     return false
   })())
 
+  const maxLegendPlayers = ref<number>((() => {
+    try {
+      const stored = localStorage.getItem('maxLegendPlayers')
+      if (stored !== null) return parseInt(stored, 10) || 10
+    } catch {}
+    return 10
+  })())
+
   const currentTheme = computed<ThemeColor>(() => findPreset(themeColorPrimary.value))
   const isLocal = computed(() => mode.value === 'local')
   const isStatic = computed(() => mode.value === 'static')
@@ -134,6 +142,10 @@ export const useAppStore = defineStore('app', () => {
     showChartTotal.value = !showChartTotal.value
   }
 
+  function setMaxLegendPlayers(val: number) {
+    maxLegendPlayers.value = val
+  }
+
   watch(darkMode, (val) => {
     applyDarkMode(val)
     try {
@@ -158,6 +170,12 @@ export const useAppStore = defineStore('app', () => {
   watch(showChartTotal, (val) => {
     try {
       localStorage.setItem('showChartTotal', String(val))
+    } catch {}
+  })
+
+  watch(maxLegendPlayers, (val) => {
+    try {
+      localStorage.setItem('maxLegendPlayers', String(val))
     } catch {}
   })
 
@@ -190,6 +208,7 @@ export const useAppStore = defineStore('app', () => {
     themeColorPrimary,
     navVisibility,
     showChartTotal,
+    maxLegendPlayers,
     currentTheme,
     isLocal,
     isStatic,
@@ -203,5 +222,6 @@ export const useAppStore = defineStore('app', () => {
     toggleNavVisibility,
     isNavVisible,
     toggleChartTotal,
+    setMaxLegendPlayers,
   }
 })

@@ -61,6 +61,7 @@ const whitelistInput = ref('')
 const blacklistInput = ref('')
 const whitelistInputRef = ref<HTMLInputElement | null>(null)
 const blacklistInputRef = ref<HTMLInputElement | null>(null)
+const maxLegendPlayers = ref(app.maxLegendPlayers)
 
 onMounted(async () => {
   if (app.isStatic) return
@@ -71,6 +72,11 @@ onMounted(async () => {
     minPlaytimeHours.value = parseFloat(settings.min_playtime_hours) || 1
     whitelist.value = JSON.parse(settings.whitelist || '[]')
     blacklist.value = JSON.parse(settings.blacklist || '[]')
+    const mlp = parseInt(settings.max_legend_players, 10)
+    if (mlp > 0) {
+      maxLegendPlayers.value = mlp
+      app.setMaxLegendPlayers(mlp)
+    }
   } catch {
   } finally {
     settingsLoading.value = false
@@ -85,7 +91,9 @@ async function saveSettings() {
       min_playtime_hours: String(minPlaytimeHours.value),
       whitelist: JSON.stringify(whitelist.value),
       blacklist: JSON.stringify(blacklist.value),
+      max_legend_players: String(maxLegendPlayers.value),
     })
+    app.setMaxLegendPlayers(maxLegendPlayers.value)
   } catch {
   } finally {
     settingsSaving.value = false
@@ -99,6 +107,12 @@ function toggleFilterEnabled() {
 
 function onMinPlaytimeChange() {
   if (minPlaytimeHours.value < 0) minPlaytimeHours.value = 0
+  saveSettings()
+}
+
+function onMaxLegendPlayersChange() {
+  if (maxLegendPlayers.value < 1) maxLegendPlayers.value = 1
+  if (maxLegendPlayers.value > 100) maxLegendPlayers.value = 100
   saveSettings()
 }
 
@@ -296,6 +310,36 @@ function onBlacklistKeydown(e: KeyboardEvent) {
               :class="app.showChartTotal ? 'left-5.5' : 'left-0.5'"
             />
           </button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      v-motion-slide-bottom :delay="81"
+      class="relative bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-8 border border-white/80 dark:border-slate-700/80 shadow-sm overflow-hidden"
+    >
+      <div class="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-brand/5 dark:from-brand/3 to-transparent rounded-full blur-3xl" />
+
+      <div class="relative">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 bg-gradient-to-br from-brand/20 to-brand/10 rounded-xl flex items-center justify-center">
+            <Users class="w-6 h-6 text-brand dark:text-brand-light" />
+          </div>
+          <div class="flex-1">
+            <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">{{ t('settings.maxLegendPlayers') }}</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('settings.maxLegendPlayersDesc') }}</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <input
+              v-model.number="maxLegendPlayers"
+              type="number"
+              min="1"
+              max="100"
+              class="w-24 px-4 py-2.5 bg-white/80 dark:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-xl text-sm dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand/40 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              @change="onMaxLegendPlayersChange"
+            />
+            <span class="text-sm text-slate-500 dark:text-slate-400">{{ t('settings.players') }}</span>
+          </div>
         </div>
       </div>
     </div>

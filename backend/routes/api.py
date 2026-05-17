@@ -290,7 +290,7 @@ def update_settings():
     if not data or not isinstance(data, dict):
         return jsonify({'error': '无效的设置数据'}), 400
 
-    allowed_keys = {'filter_enabled', 'min_playtime_hours', 'whitelist', 'blacklist'}
+    allowed_keys = {'filter_enabled', 'min_playtime_hours', 'whitelist', 'blacklist', 'max_legend_players'}
     settings = {}
     for key, value in data.items():
         if key in allowed_keys:

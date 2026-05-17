@@ -232,6 +232,7 @@ class SettingsRepository:
         'min_playtime_hours': '1',
         'whitelist': '[]',
         'blacklist': '[]',
+        'max_legend_players': '10',
     }
 
     @staticmethod

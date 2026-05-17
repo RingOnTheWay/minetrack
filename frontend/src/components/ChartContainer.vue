@@ -37,8 +37,11 @@ const app = useAppStore()
 const option = computed(() => {
   const isArea = props.chartType === 'line'
   const dark = app.isDark
+  const maxSeries = app.maxLegendPlayers
 
-  const seriesList = props.series.map((s) => {
+  const limitedSeries = props.series.slice(0, maxSeries)
+
+  const seriesList = limitedSeries.map((s) => {
     const base: any = {
       name: s.name,
       type: s.type || props.chartType,
@@ -89,7 +92,23 @@ const option = computed(() => {
       borderWidth: 1,
       padding: [12, 16],
       textStyle: { color: dark ? '#e2e8f0' : '#334155', fontSize: 12 },
-      extraCssText: 'border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.08);backdrop-filter:blur(12px);' + (dark ? 'color:#e2e8f0;' : ''),
+      extraCssText: 'border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.08);backdrop-filter:blur(12px);max-height:400px;overflow-y:auto;' + (dark ? 'color:#e2e8f0;' : ''),
+      appendToBody: true,
+      formatter: (params: any) => {
+        if (!Array.isArray(params) || params.length === 0) return ''
+        const max = 10
+        let html = `<div style="font-weight:600;margin-bottom:6px">${params[0].axisValue}</div>`
+        const sorted = [...params].sort((a, b) => (b.value ?? 0) - (a.value ?? 0))
+        const show = sorted.slice(0, max)
+        for (const item of show) {
+          const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${item.color};margin-right:6px;vertical-align:middle"></span>`
+          html += `<div style="display:flex;justify-content:space-between;align-items:center;gap:16px;line-height:1.8">${dot}<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.seriesName}</span><span style="font-weight:600;margin-left:8px">${item.value ?? 0}</span></div>`
+        }
+        if (sorted.length > max) {
+          html += `<div style="text-align:center;color:${dark ? '#64748b' : '#94a3b8'};padding-top:4px;font-size:11px">已隐藏后面 ${sorted.length - max} 条数据</div>`
+        }
+        return html
+      },
     },
     legend: {
       bottom: 0,
