@@ -58,42 +58,43 @@ function toggleLocale() {
       </div>
     </div>
 
-    <nav class="relative flex-1 p-3 space-y-1 overflow-y-auto">
-      <button
-        v-for="(item, index) in menuItems"
-        :key="item.path"
-        v-motion-slide-left :delay="index * 50"
-        class="relative w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-300 group"
-        :class="!isSettingsPage && currentPath === item.path
-          ? 'nav-item-active'
-          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/80 dark:hover:bg-slate-800/60'"
-        @click="navigate(item.path)"
-      >
-        <div class="relative flex items-center gap-3">
-          <div
-            class="nav-icon transition-colors"
-            :class="!isSettingsPage && currentPath === item.path ? '' : 'text-slate-500 dark:text-slate-500'"
-          >
-            <component :is="item.icon" class="w-5 h-5" />
-          </div>
-          <span class="text-sm font-medium">{{ item.label }}</span>
-        </div>
-
-        <span
-          v-if="item.badge"
-          class="px-2 py-0.5 text-xs font-semibold rounded-full"
-          :class="item.badge === 'New'
-            ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white'
-            : 'bg-brand/20 text-brand dark:bg-brand/30 dark:text-brand-light'"
+    <nav class="relative flex-1 p-3 space-y-1 overflow-y-auto overflow-x-hidden hide-scrollbar">
+      <TransitionGroup name="nav-item">
+        <button
+          v-for="item in menuItems"
+          :key="item.path"
+          class="relative w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-300 group"
+          :class="!isSettingsPage && currentPath === item.path
+            ? 'nav-item-active'
+            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/80 dark:hover:bg-slate-800/60'"
+          @click="navigate(item.path)"
         >
-          {{ item.badge }}
-        </span>
+          <div class="relative flex items-center gap-3">
+            <div
+              class="nav-icon transition-colors"
+              :class="!isSettingsPage && currentPath === item.path ? '' : 'text-slate-500 dark:text-slate-500'"
+            >
+              <component :is="item.icon" class="w-5 h-5" />
+            </div>
+            <span class="text-sm font-medium">{{ item.label }}</span>
+          </div>
 
-        <div
-          v-if="!isSettingsPage && currentPath === item.path"
-          class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-brand to-brand-light rounded-r-full"
-        />
-      </button>
+          <span
+            v-if="item.badge"
+            class="px-2 py-0.5 text-xs font-semibold rounded-full"
+            :class="item.badge === 'New'
+              ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white'
+              : 'bg-brand/20 text-brand dark:bg-brand/30 dark:text-brand-light'"
+          >
+            {{ item.badge }}
+          </span>
+
+          <div
+            v-if="!isSettingsPage && currentPath === item.path"
+            class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-brand to-brand-light rounded-r-full"
+          />
+        </button>
+      </TransitionGroup>
     </nav>
 
     <div class="relative p-4 border-t border-brand/10 dark:border-brand/20">
@@ -121,6 +122,26 @@ function toggleLocale() {
 </template>
 
 <style scoped>
+.nav-item-enter-active {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.nav-item-leave-active {
+  transition: all 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+  position: absolute;
+  width: calc(100% - 1.5rem);
+}
+.nav-item-enter-from {
+  opacity: 0;
+  transform: translateX(-16px);
+}
+.nav-item-leave-to {
+  opacity: 0;
+  transform: translateX(-16px);
+}
+.nav-item-move {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 .theme-icon-enter-active,
 .theme-icon-leave-active {
   transition: all 0.2s ease;

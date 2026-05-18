@@ -3,7 +3,7 @@ import { computed, ref, onMounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore, themePresets } from '@/stores/app'
 import type { NavKey } from '@/stores/app'
-import { Palette, User, Code, ExternalLink, Check, Scale, Calendar, LayoutList, Lock, BarChart3, Filter, X, Plus, Shield, ShieldOff, Clock } from 'lucide-vue-next'
+import { Palette, User, Code, ExternalLink, Check, Scale, Calendar, LayoutList, Lock, BarChart3, Filter, X, Plus, Shield, ShieldOff, Clock, Pickaxe } from 'lucide-vue-next'
 import {
   LayoutDashboard, Map, Users, Swords, Hammer, Package, TrendingUp,
   Database,
@@ -38,6 +38,7 @@ const navItems = computed(() => [
   { icon: Swords, label: t('nav.battleStats'), key: '/battle' as NavKey },
   { icon: Hammer, label: t('nav.craftStats'), key: '/craft' as NavKey },
   { icon: Package, label: t('nav.itemStats'), key: '/items' as NavKey },
+  { icon: Pickaxe, label: t('nav.blockStats'), key: '/blocks' as NavKey },
   { icon: TrendingUp, label: t('nav.activity'), key: '/activity' as NavKey },
   { icon: Database, label: t('nav.dataManage'), key: '/data-manage' as NavKey },
 ])
