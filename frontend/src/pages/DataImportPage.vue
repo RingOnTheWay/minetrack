@@ -3,7 +3,8 @@ import { ref, onMounted, computed, onBeforeUnmount, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { apiPost, apiDelete, apiGet } from '@/services/api'
 import { useDataStore } from '@/stores/data'
-import { Upload, Trash2, Database, Loader2, ChevronLeft, ChevronRight, FolderOpen, Calendar, Play, HardDrive, ArrowLeft, Folder, Lock } from 'lucide-vue-next'
+import { Upload, Trash2, Database, Loader2, FolderOpen, Calendar, Play, HardDrive, ArrowLeft, Folder, Lock } from 'lucide-vue-next'
+import DatePickerPopup from '@/components/DatePickerPopup.vue'
 
 const { t } = useI18n()
 const dataStore = useDataStore()
@@ -37,15 +38,10 @@ const deleteSingleResult = ref<any>(null)
 const deleteSingleError = ref('')
 
 const showSingleDatePicker = ref(false)
-const singlePickerYear = ref(new Date().getFullYear())
-const singlePickerMonth = ref(new Date().getMonth())
 
 const showRangePicker = ref(false)
-const rangePickerYear = ref(new Date().getFullYear())
-const rangePickerMonth = ref(new Date().getMonth())
 const rangeStart = ref('')
 const rangeEnd = ref('')
-const rangeSelectingEnd = ref(false)
 const rangeMatchedDates = ref<string[]>([])
 
 const popupStyle = ref({ top: '0px', left: '0px' })
@@ -81,13 +77,6 @@ function updatePopupPosition(el: HTMLElement | null) {
 }
 
 function openSinglePicker() {
-  if (deleteDate.value) {
-    const parts = deleteDate.value.split('-')
-    if (parts.length === 3) {
-      singlePickerYear.value = parseInt(parts[0])
-      singlePickerMonth.value = parseInt(parts[1]) - 1
-    }
-  }
   showSingleDatePicker.value = true
   showRangePicker.value = false
   nextTick(() => updatePopupPosition(singleInputRef.value))
@@ -152,7 +141,7 @@ async function handleBatchDelete() {
   globalLoading.value = true; globalLoadingText.value = t('dataManage.batchDelete')
   try {
     deleteResult.value = await apiDelete('/api/batch_delete', { dates: rangeMatchedDates.value })
-    rangeStart.value = ''; rangeEnd.value = ''; rangeMatchedDates.value = []; rangeSelectingEnd.value = false
+    rangeStart.value = ''; rangeEnd.value = ''; rangeMatchedDates.value = []
     await refreshAllData()
   } catch (e: any) { deleteError.value = e.message || t('dataManage.operationFailed') }
   finally { deleteLoading.value = false; globalLoading.value = false }
@@ -174,76 +163,32 @@ function computeRangeDates() {
   rangeMatchedDates.value = dates.value.filter(d => d >= rangeStart.value && d <= rangeEnd.value)
 }
 
-const MONTH_NAMES_ZH = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月']
-const MONTH_NAMES_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-const monthNames = computed(() => t('lang.switchTo') === '中文' ? MONTH_NAMES_EN : MONTH_NAMES_ZH)
-
-function getDaysInMonth(year: number, month: number) { return new Date(year, month + 1, 0).getDate() }
-function getFirstDayOfWeek(year: number, month: number) { return new Date(year, month, 1).getDay() }
-
-function pickerDayDates(year: number, month: number) {
-  const days = getDaysInMonth(year, month)
-  const result: (string | null)[] = []
-  for (let d = 1; d <= days; d++) {
-    const mm = String(month + 1).padStart(2, '0')
-    const dd = String(d).padStart(2, '0')
-    result.push(`${year}-${mm}-${dd}`)
-  }
-  return result
+function handleSelectSingleDate(date: string) {
+  deleteDate.value = date
+  showSingleDatePicker.value = false
 }
 
-type PickerTarget = 'single' | 'range'
-
-function getPickerYear(target: PickerTarget) {
-  if (target === 'single') return singlePickerYear.value
-  return rangePickerYear.value
-}
-
-function getPickerMonth(target: PickerTarget) {
-  if (target === 'single') return singlePickerMonth.value
-  return rangePickerMonth.value
-}
-
-function prevMonth(target: PickerTarget) {
-  const yRef = target === 'single' ? singlePickerYear : rangePickerYear
-  const mRef = target === 'single' ? singlePickerMonth : rangePickerMonth
-  if (mRef.value === 0) { mRef.value = 11; yRef.value-- } else { mRef.value-- }
-}
-
-function nextMonth(target: PickerTarget) {
-  const yRef = target === 'single' ? singlePickerYear : rangePickerYear
-  const mRef = target === 'single' ? singlePickerMonth : rangePickerMonth
-  if (mRef.value === 11) { mRef.value = 0; yRef.value++ } else { mRef.value++ }
-}
-
-function selectSingleDate(date: string) { deleteDate.value = date; showSingleDatePicker.value = false }
-
-function selectRangeDate(date: string) {
-  if (!rangeStart.value || rangeSelectingEnd.value) {
-    if (!rangeStart.value || date < rangeStart.value) {
-      rangeStart.value = date; rangeEnd.value = ''; rangeSelectingEnd.value = false; rangeMatchedDates.value = []
-    } else {
-      rangeEnd.value = date; rangeSelectingEnd.value = true; computeRangeDates()
-    }
+function handleSelectRange(start: string, end: string) {
+  rangeStart.value = start
+  rangeEnd.value = end
+  if (start && end) {
+    computeRangeDates()
+    showRangePicker.value = false
   } else {
-    if (date < rangeStart.value) {
-      rangeStart.value = date; rangeEnd.value = ''; rangeSelectingEnd.value = false; rangeMatchedDates.value = []
-    } else {
-      rangeEnd.value = date; rangeSelectingEnd.value = true; computeRangeDates()
-    }
+    rangeMatchedDates.value = []
   }
 }
 
-function isInRange(date: string) {
-  if (!rangeStart.value || !rangeEnd.value) return false
-  return date >= rangeStart.value && date <= rangeEnd.value
+function handleSingleClear() {
+  deleteDate.value = ''
+  showSingleDatePicker.value = false
 }
 
-function getRangeDayClass(date: string | null) {
-  if (!date) return ''
-  if (date === rangeStart.value || date === rangeEnd.value) return 'dp-selected-accent'
-  if (isInRange(date)) return 'dp-in-range'
-  return 'text-slate-600 dark:text-slate-400 dp-hover-accent'
+function handleRangeClear() {
+  rangeStart.value = ''
+  rangeEnd.value = ''
+  rangeMatchedDates.value = []
+  showRangePicker.value = false
 }
 
 const showFolderBrowser = ref(false)
@@ -587,64 +532,30 @@ function selectFolderAndClose() {
     </Teleport>
 
     <Teleport to="body">
-      <div v-if="showSingleDatePicker" class="date-picker-popup dark:bg-slate-800 dark:border-slate-700" :style="popupStyle" @click.stop>
-        <div class="flex items-center justify-between mb-3">
-          <button class="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-all" @click="prevMonth('single')">
-            <ChevronLeft class="w-4 h-4 text-slate-600 dark:text-slate-400" />
-          </button>
-          <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">{{ getPickerYear('single') }} {{ monthNames[getPickerMonth('single')] }}</span>
-          <button class="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-all" @click="nextMonth('single')">
-            <ChevronRight class="w-4 h-4 text-slate-600 dark:text-slate-400" />
-          </button>
-        </div>
-        <div class="grid grid-cols-7 gap-1 text-center">
-          <div v-for="d in ['日', '一', '二', '三', '四', '五', '六']" :key="d" class="text-xs text-slate-400 py-1 font-medium">{{ d }}</div>
-          <div v-for="n in getFirstDayOfWeek(getPickerYear('single'), getPickerMonth('single'))" :key="'e'+n" class="py-1" />
-          <button
-            v-for="date in pickerDayDates(getPickerYear('single'), getPickerMonth('single'))"
-            :key="date || 'null'"
-            class="py-1.5 text-xs rounded-lg transition-all"
-            :class="date === deleteDate ? 'dp-selected-accent' : dates.includes(date || '') ? 'dp-has-data dp-hover-accent' : 'dp-no-data pointer-events-none'"
-            @click="date && dates.includes(date) && selectSingleDate(date)"
-          >
-            {{ date ? date.slice(8) : '' }}
-          </button>
-        </div>
-      </div>
+      <DatePickerPopup
+        :visible="showSingleDatePicker"
+        :available-dates="dates"
+        mode="single"
+        color-scheme="accent"
+        :selected-date="deleteDate"
+        :popup-style="popupStyle"
+        @select="handleSelectSingleDate"
+        @clear="handleSingleClear"
+      />
     </Teleport>
 
     <Teleport to="body">
-      <div v-if="showRangePicker" class="date-picker-popup dark:bg-slate-800 dark:border-slate-700" :style="popupStyle" @click.stop>
-        <div class="flex items-center justify-between mb-2">
-          <button class="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-all" @click="prevMonth('range')">
-            <ChevronLeft class="w-4 h-4 text-slate-600 dark:text-slate-400" />
-          </button>
-          <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">{{ getPickerYear('range') }} {{ monthNames[getPickerMonth('range')] }}</span>
-          <button class="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-all" @click="nextMonth('range')">
-            <ChevronRight class="w-4 h-4 text-slate-600 dark:text-slate-400" />
-          </button>
-        </div>
-        <div class="text-xs text-slate-400 mb-2 text-center">
-          {{ rangeStart && !rangeEnd ? t('dataManage.selectEndDate') : t('dataManage.selectStartDate') }}
-        </div>
-        <div class="grid grid-cols-7 gap-1 text-center">
-          <div v-for="d in ['日', '一', '二', '三', '四', '五', '六']" :key="d" class="text-xs text-slate-400 py-1 font-medium">{{ d }}</div>
-          <div v-for="n in getFirstDayOfWeek(getPickerYear('range'), getPickerMonth('range'))" :key="'e'+n" class="py-1" />
-          <button
-            v-for="date in pickerDayDates(getPickerYear('range'), getPickerMonth('range'))"
-            :key="date || 'null'"
-            class="py-1.5 text-xs rounded-lg transition-all"
-            :class="getRangeDayClass(date)"
-            @click="date && selectRangeDate(date)"
-          >
-            {{ date ? date.slice(8) : '' }}
-          </button>
-        </div>
-        <div v-if="rangeStart && rangeEnd" class="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
-          <span class="text-xs text-slate-500 dark:text-slate-400">{{ t('dataManage.matchedDates', { n: rangeMatchedDates.length }) }}</span>
-          <button class="text-xs accent-clear-btn" @click="rangeStart = ''; rangeEnd = ''; rangeMatchedDates = []; rangeSelectingEnd = false">{{ t('common.deselectAll') }}</button>
-        </div>
-      </div>
+      <DatePickerPopup
+        :visible="showRangePicker"
+        :available-dates="dates"
+        mode="range"
+        color-scheme="accent"
+        :range-start="rangeStart"
+        :range-end="rangeEnd"
+        :popup-style="popupStyle"
+        @select-range="handleSelectRange"
+        @clear="handleRangeClear"
+      />
     </Teleport>
 
     <Teleport to="body">

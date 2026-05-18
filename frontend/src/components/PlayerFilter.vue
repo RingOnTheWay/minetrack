@@ -4,6 +4,8 @@ import { usePlayerFilter } from '@/services/usePlayerFilter'
 import { useI18n } from 'vue-i18n'
 import { ChevronDown, X, Check, Users, Search } from 'lucide-vue-next'
 
+const DROPDOWN_CLOSE_EVENT = 'close-other-dropdowns'
+
 const { t } = useI18n()
 
 const props = defineProps<{
@@ -39,7 +41,16 @@ function toggleDropdown(e: MouseEvent) {
   if (!open.value) {
     searchQuery.value = ''
   } else {
+    window.dispatchEvent(new CustomEvent(DROPDOWN_CLOSE_EVENT, { detail: 'player-filter' }))
     nextTick(() => searchInputRef.value?.focus())
+  }
+}
+
+function handleCloseOtherDropdowns(e: Event) {
+  const detail = (e as CustomEvent).detail
+  if (detail !== 'player-filter') {
+    open.value = false
+    searchQuery.value = ''
   }
 }
 
@@ -71,12 +82,18 @@ function handleClickOutside(e: MouseEvent) {
   }
 }
 
-onMounted(() => document.addEventListener('click', handleClickOutside))
-onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+  window.addEventListener(DROPDOWN_CLOSE_EVENT, handleCloseOtherDropdowns)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside)
+  window.removeEventListener(DROPDOWN_CLOSE_EVENT, handleCloseOtherDropdowns)
+})
 </script>
 
 <template>
-  <div ref="dropdownRef" class="flex items-center gap-3" @click="toggleDropdown">
+  <div ref="dropdownRef" class="flex items-center gap-3" @click="open && (open = false, searchQuery = '')">
     <div class="flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-400 whitespace-nowrap">
       <Users class="w-4 h-4 text-brand dark:text-brand-light" />
       <span>{{ t('common.filterPlayers') }}</span>
@@ -85,6 +102,7 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
       <div
         class="flex items-center justify-between px-3 py-2 rounded-xl border bg-white/80 dark:bg-slate-800/80 cursor-pointer transition-all min-h-[44px] gap-2"
         :class="open ? 'border-brand/40 ring-2 ring-brand/20' : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'"
+        @click.stop="toggleDropdown"
       >
         <div class="flex flex-wrap gap-1.5 flex-1 min-w-0">
           <template v-if="isAll">
@@ -126,17 +144,17 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
             </button>
           </div>
         </div>
-        <div class="max-h-[260px] overflow-y-auto hide-scrollbar p-1">
-          <label
+        <div class="max-h-[260px] overflow-y-auto hide-scrollbar">
+          <div
             v-for="p in filteredPlayers"
             :key="p"
-            class="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-all text-sm"
+            class="flex items-center gap-3 px-3 py-2 cursor-pointer transition-all text-sm"
             :class="selectedSet.has(p) ? 'bg-brand/10 dark:bg-brand/20 text-brand dark:text-brand-light' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50'"
+            @click="togglePlayer(p)"
           >
-            <input type="checkbox" :checked="selectedSet.has(p)" @change="togglePlayer(p)" class="accent-brand" />
             <span class="flex-1">{{ p }}</span>
             <Check v-if="selectedSet.has(p)" class="w-4 h-4 text-brand dark:text-brand-light" />
-          </label>
+          </div>
           <div v-if="filteredPlayers.length === 0" class="px-3 py-4 text-center text-sm text-slate-400 dark:text-slate-500">
             {{ t('common.noResults') }}
           </div>

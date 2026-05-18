@@ -3,11 +3,13 @@ import { ref, onMounted, computed } from 'vue'
 import { useDataStore } from '@/stores/data'
 import { useAppStore } from '@/stores/app'
 import { usePlayerFilter } from '@/services/usePlayerFilter'
+import { useDateRange } from '@/services/useDateRange'
 import { useI18n } from 'vue-i18n'
 import ChartContainer from '@/components/ChartContainer.vue'
 import type { ChartSeries } from '@/components/ChartContainer.vue'
 import { TrendingUp } from 'lucide-vue-next'
 import PlayerFilter from '@/components/PlayerFilter.vue'
+import DateRangeFilter from '@/components/DateRangeFilter.vue'
 
 const { t, locale } = useI18n()
 
@@ -27,6 +29,7 @@ const ACTIVITY_LABELS: Record<string, string> = {
 const data = useDataStore()
 const app = useAppStore()
 const filter = usePlayerFilter(data.allPlayers)
+const dateRange = useDateRange(() => data.allDates)
 const currentKey = ref<string>('sprint_one_cm')
 
 const currentLabel = computed(() => t(ACTIVITY_LABELS[currentKey.value] || currentKey.value))
@@ -43,11 +46,11 @@ function getColors(n: number) {
   return c
 }
 
-const chartLabels = computed(() => data.allDates)
+const chartLabels = computed(() => dateRange.filteredDates.value)
 
 const chartSeries = computed<ChartSeries[]>(() => {
   const statData = (data.playerStats as any)[currentKey.value] || {}
-  const ds = data.allDates; const players = activePlayers.value
+  const ds = dateRange.filteredDates.value; const players = activePlayers.value
   const colors = getColors(players.length + 1)
   return [
     ...players.map((p, i) => ({
@@ -80,6 +83,16 @@ const yAxisLabel = computed(() => t('activity.unit'))
     </div>
 
     <PlayerFilter :filter="filter" />
+
+    <DateRangeFilter
+      :start-date="dateRange.startDate.value"
+      :end-date="dateRange.endDate.value"
+      :has-filter="dateRange.hasFilter.value"
+      :available-dates="data.allDates"
+      @update:start="dateRange.startDate.value = $event"
+      @update:end="dateRange.endDate.value = $event"
+      @clear="dateRange.clearDateRange()"
+    />
 
     <div class="relative bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-8 border border-white/80 dark:border-slate-700/80 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group">
       <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-brand/5 dark:from-brand/3 to-transparent rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />

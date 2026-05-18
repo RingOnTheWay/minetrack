@@ -156,6 +156,15 @@
     "version": "版本",
     "buildDate": "构建日期"
   },
+  "dateRange": {
+    "allDates": "全部日期",
+    "timeFilter": "时间筛选",
+    "startDate": "开始日期",
+    "endDate": "结束日期",
+    "selectStartDate": "请选择开始日期",
+    "selectEndDate": "请选择结束日期",
+    "clear": "清除筛选"
+  },
   "dataManage": {
     "importTab": "数据导入",
     "deleteTab": "数据删除",

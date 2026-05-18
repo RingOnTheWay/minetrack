@@ -156,6 +156,15 @@
     "version": "Version",
     "buildDate": "Build Date"
   },
+  "dateRange": {
+    "allDates": "All Dates",
+    "timeFilter": "Time Filter",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "selectStartDate": "Select start date",
+    "selectEndDate": "Select end date",
+    "clear": "Clear Filter"
+  },
   "dataManage": {
     "importTab": "Import",
     "deleteTab": "Delete",
