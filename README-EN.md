@@ -29,7 +29,7 @@
 
 ## Overview
 
-MineTrack is a Minecraft server data statistics panel built with Vue 3 + Flask layered architecture, supporting two modes: local data scanning import and static page deployment. It covers comprehensive data visualization including map size trends, player statistics, battle statistics, item crafting, item pickups/drops/usage, and player activity statistics. Features dark mode, 9 theme color presets, and bilingual (Chinese/English) support.
+MineTrack is a Minecraft server data statistics panel built with Vue 3 + Flask layered architecture, supporting two modes: local data scanning import and static page deployment. It covers comprehensive data visualization including map size trends, player statistics, battle statistics, item crafting, item pickups/drops/usage, block statistics, and player activity statistics. Features dark mode, 9 theme color presets, bilingual (Chinese/English) support, and time range filtering.
 
 ## Features
 
@@ -44,6 +44,7 @@ MineTrack is a Minecraft server data statistics panel built with Vue 3 + Flask l
 
 - 📈 Map size trends (Overworld / Nether / End line charts with area fill)
 - 🔍 Multi-player filtering and comparison
+- 📅 Time range filtering
 - 📊 Real-time growth rate calculation
 
 ### Player Statistics
@@ -51,6 +52,7 @@ MineTrack is a Minecraft server data statistics panel built with Vue 3 + Flask l
 - 👥 6 core metrics: play time (hours), deaths, mob kills, player kills, jumps, walk distance (km)
 - 📊 Line charts with stat type switching
 - 🔍 Multi-player filtering and comparison (golden angle distribution colors)
+- 📅 Time range filtering
 
 ### Battle Statistics
 
@@ -58,6 +60,7 @@ MineTrack is a Minecraft server data statistics panel built with Vue 3 + Flask l
 - 🛡️ Killed by mob ranking
 - 🏆 Top 10 mob statistics (with 76+ mob name translations)
 - 🥇 Medal-style highlighting for top 3
+- 📅 Time range filtering
 
 ### Item Crafting
 
@@ -65,26 +68,45 @@ MineTrack is a Minecraft server data statistics panel built with Vue 3 + Flask l
 - 📊 Date trend bar chart + Top 10 items ranking
 - 👤 Multi-player filtering support
 - 🌐 740+ item name translations
+- 📅 Time range filtering
 
 ### Item Statistics
 
 - 📦 Item pickups / drops / usage (picked\_up / dropped / used)
 - 📈 Date trend bar chart + Top 10 ranking
 - 👤 Multi-player filtering support
+- 📅 Time range filtering
+
+### Block Statistics
+
+- ⛏️ Block mining and tool wear statistics (mined / broken categories)
+- 📊 Date trend bar chart + Top 10 blocks ranking
+- 👤 Multi-player filtering support
+- 📅 Time range filtering
 
 ### Activity Statistics
 
 - 🏃‍♂️ 9 activity types: sprint, walk, fly, climb, swim, horse, boat, elytra, fall
 - 📊 Date trend bar chart with activity type switching
 - 👤 Multi-player filtering support
+- 📅 Time range filtering
+
+### Time Range Filtering
+
+- 📅 All statistics pages support filtering chart data by date range
+- 🗓️ Custom calendar popup: year/month/day three-level navigation, click year to enter year selection, click month to enter month selection
+- 🚫 Dates without data are automatically disabled (applies in day/month/year views)
+- 🔄 Range selection: select start date first, then end date; auto-closes when complete; clicking again after both dates resets from the beginning
+- 🧹 Clear filter button, available both inside the popup and on the input field
+- 🔒 Player filter and time filter are mutually exclusive — opening one auto-closes the other
 
 ### Data Management (Local Mode)
 
 - 📂 Single scan import: enter path or use folder browser to select server folder
 - 📁 Batch scan import: auto-detect dates from `server.properties`
 - 🗂️ Folder browser: drive selection, directory navigation, inaccessible directory markers
-- 🗑️ Delete by date: custom calendar popup selector
-- 🧹 Batch delete: date range selector
+- 🗑️ Delete by date: custom calendar popup selector (shared component with statistics pages)
+- 🧹 Batch delete: date range selector (shared component with statistics pages)
 - ⚠️ Delete all data (with confirmation dialog)
 
 ### Player Import Filter
@@ -159,7 +181,7 @@ Deploy `frontend/dist/` to GitHub Pages.
 | GET    | `/api/dates`                                  | Get all recorded dates                                                                              |
 | GET    | `/api/map_sizes`                              | Get map size data                                                                                   |
 | GET    | `/api/player_stats?type=`                     | Get player stats (16 types, see below)                                                              |
-| GET    | `/api/stats/:domain?category=`                | Detail stats (domain: battle/craft/item)                                                            |
+| GET    | `/api/stats/:domain?category=`                | Detail stats (domain: battle/craft/item/block)                                                      |
 | GET    | `/api/stats/:domain/summary?category=&limit=` | Stats summary Top N (default limit=10)                                                              |
 | GET    | `/api/browse?path=`                           | Browse directories (Windows drive enumeration)                                                      |
 | POST   | `/api/scan`                                   | `{"folder":"..."}` Scan a single folder                                                             |
@@ -171,7 +193,7 @@ Deploy `frontend/dist/` to GitHub Pages.
 | GET    | `/api/settings`                               | Get all settings (filter_enabled / min_playtime_hours / whitelist / blacklist / max_legend_players) |
 | POST   | `/api/settings`                               | Update settings (allowed keys same as above)                                                        |
 
-> Backward compatible: `/api/battle_stats`, `/api/craft_stats`, `/api/item_stats`, `/api/battle_summary` are still available, all mapped to the unified `/api/stats/:domain` interface.
+> Backward compatible: `/api/battle_stats`, `/api/craft_stats`, `/api/item_stats`, `/api/block_stats`, `/api/battle_summary`, `/api/block_summary` are still available, all mapped to the unified `/api/stats/:domain` interface.
 
 **player\_stats supported type values:** `play_time`, `deaths`, `mob_kills`, `player_kills`, `jumps`, `damage_dealt`, `distance_walked`, `sprint_one_cm`, `walk_one_cm`, `fly_one_cm`, `climb_one_cm`, `swim_one_cm`, `horse_one_cm`, `boat_one_cm`, `aviate_one_cm`, `fall_one_cm`
 
@@ -214,7 +236,8 @@ stat/
 │   │   │   └── data.ts                # Statistics data state (dual-mode loading)
 │   │   ├── services/
 │   │   │   ├── api.ts                 # API call layer (auto-switch local/static mode)
-│   │   │   └── usePlayerFilter.ts     # Player filter composable
+│   │   │   ├── usePlayerFilter.ts     # Player filter composable
+│   │   │   └── useDateRange.ts        # Date range filter composable
 │   │   ├── i18n/
 │   │   │   ├── index.ts               # vue-i18n configuration
 │   │   │   ├── zh-CN.json             # Chinese translations
@@ -226,7 +249,9 @@ stat/
 │   │   │   ├── Sidebar.vue            # Sidebar navigation (locale/dark mode toggle)
 │   │   │   ├── TopBar.vue             # Top navigation bar
 │   │   │   ├── ChartContainer.vue     # ECharts chart container
-│   │   │   └── PlayerFilter.vue       # Player filter component
+│   │   │   ├── PlayerFilter.vue       # Player filter component
+│   │   │   ├── DateRangeFilter.vue    # Date range filter component
+│   │   │   └── DatePickerPopup.vue    # Shared date picker popup component
 │   │   └── pages/
 │   │       ├── DashboardPage.vue      # Dashboard overview
 │   │       ├── MapStatsPage.vue       # Map statistics
@@ -234,6 +259,7 @@ stat/
 │   │       ├── BattleStatsPage.vue    # Battle statistics
 │   │       ├── CraftStatsPage.vue     # Crafting statistics
 │   │       ├── ItemStatsPage.vue      # Item statistics
+│   │       ├── BlockStatsPage.vue     # Block statistics
 │   │       ├── ActivityPage.vue       # Activity statistics
 │   │       ├── DataImportPage.vue     # Data management (import/delete)
 │   │       └── SettingsPage.vue       # Personalization settings
@@ -262,7 +288,7 @@ stat/
 │   ├── zh-CN.json
 │   └── en-US.json
 ├── scripts/
-│   ├── export_data.py                 # Data export script
+│   └── export_data.py                 # Data export script
 ├── assets/
 │   └── icon.png
 ├── minetrack.db                       # SQLite database
@@ -293,11 +319,11 @@ minetrack.db      ← SQLite database (WAL mode)
 ```
 pages/            ← Vue page components (lazy-loaded by route)
     ↓
-components/       ← Reusable UI components (ChartContainer / PlayerFilter)
+components/       ← Reusable UI components (ChartContainer / PlayerFilter / DateRangeFilter / DatePickerPopup)
     ↓
 stores/           ← Pinia Stores (app + data)
     ↓
-services/api.ts   ← Unified API calls (auto-switch local/static mode)
+services/         ← Composables (usePlayerFilter / useDateRange) + API call layer
 ```
 
 ## Frontend Routes
@@ -310,6 +336,7 @@ services/api.ts   ← Unified API calls (auto-switch local/static mode)
 | `#/battle`      | BattleStatsPage | Battle kill statistics                                           |
 | `#/craft`       | CraftStatsPage  | Item crafting statistics                                         |
 | `#/items`       | ItemStatsPage   | Pickup/drop/use statistics                                       |
+| `#/blocks`      | BlockStatsPage  | Block mining and tool wear statistics                            |
 | `#/activity`    | ActivityPage    | 9 activity distance statistics                                   |
 | `#/data-manage` | DataImportPage  | Data import and delete management                                |
 | `#/settings`    | SettingsPage    | Theme color / dark mode / chart settings / player filter / about |
@@ -321,7 +348,7 @@ services/api.ts   ← Unified API calls (auto-switch local/static mode)
 - The frontend proxies `/api/*` requests to the Flask backend at `localhost:5000` via Vite proxy
 - In static mode, the frontend reads `data.json` from root; API request failures auto-fallback to static mode
 - The database uses SQLite WAL mode for improved concurrent read/write performance
-- The `detail_stats` table unifies battle/craft/item statistics via the `stat_domain` field; adding a new stat type only requires writing data with a new domain
+- The `detail_stats` table unifies battle/craft/item/block statistics via the `stat_domain` field; adding a new stat type only requires writing data with a new domain
 - The backend `services/parser.py` provides a generic `parse_detail_stats_by_domain()` function that accepts a domain and categories dict to parse any stat type
 - `services/scanner.py` batch scanning auto-detects dates from folder names (supports `YYYY-MM-DD`, `YYYY.MM.DD`, `YYYY_MM_DD`, `MM.DD` formats), with three-level fallback: server.properties → folder name → modification time
 - Theme colors switch in real-time via CSS custom properties `--color-brand` / `--brand`, all components and charts respond
@@ -330,6 +357,7 @@ services/api.ts   ← Unified API calls (auto-switch local/static mode)
 - Whitelist and blacklist are mutually exclusive: adding to one auto-removes from the other; when whitelist is not empty, only whitelisted players are imported
 - Legend player count setting controls the maximum number of series displayed in charts (default 10)
 - ECharts tooltip custom formatter: sorted by value descending, shows top 10 items with overflow indicator
+- 
 
 ## Acknowledgments
 
