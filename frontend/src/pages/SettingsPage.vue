@@ -358,9 +358,12 @@ function onBlacklistKeydown(e: KeyboardEvent) {
 
     <div
       v-motion-slide-bottom :delay="87"
-      class="relative bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-8 border border-white/80 dark:border-slate-700/80 shadow-sm overflow-hidden"
+      class="relative bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-8 border border-white/80 dark:border-slate-700/80 shadow-sm"
+      :class="defaultSelectedDropdownOpen ? 'z-50' : ''"
     >
-      <div class="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-brand/5 dark:from-brand/3 to-transparent rounded-full blur-3xl" />
+      <div class="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
+        <div class="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-brand/5 dark:from-brand/3 to-transparent rounded-full blur-3xl" />
+      </div>
 
       <div class="relative">
         <div class="flex items-center gap-4 mb-6">
@@ -423,7 +426,7 @@ function onBlacklistKeydown(e: KeyboardEvent) {
                 <span class="ml-auto text-xs text-slate-400">{{ app.defaultSelectedPlayers.length }}/{{ sortedAllPlayers.length }}</span>
               </button>
 
-              <div v-if="defaultSelectedDropdownOpen" class="absolute top-full mt-1 left-0 right-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-200 dark:border-slate-600 rounded-xl shadow-xl z-50 overflow-hidden" @click.stop>
+              <div v-if="defaultSelectedDropdownOpen" class="absolute top-full mt-1 left-0 right-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl shadow-xl z-50 overflow-hidden" @click.stop>
                 <div class="p-2 border-b border-slate-100 dark:border-slate-700">
                   <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-700/50">
                     <Search class="w-4 h-4 text-slate-400 dark:text-slate-500 flex-shrink-0" />
