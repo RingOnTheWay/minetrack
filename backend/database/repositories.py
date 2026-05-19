@@ -40,6 +40,19 @@ class MapSizeRepository:
             conn.close()
 
     @staticmethod
+    def insert_many(rows: list, conn: Optional[sqlite3.Connection] = None):
+        close_conn = conn is None
+        if close_conn:
+            conn = get_connection()
+        conn.executemany(
+            'INSERT OR REPLACE INTO map_sizes (date, map_name, size_mb) VALUES (?, ?, ?)',
+            rows
+        )
+        if close_conn:
+            conn.commit()
+            conn.close()
+
+    @staticmethod
     def delete_by_date(date: str, conn: Optional[sqlite3.Connection] = None):
         close_conn = conn is None
         if close_conn:
@@ -102,6 +115,19 @@ class PlayerStatsRepository:
         conn.execute(
             'INSERT OR REPLACE INTO player_stats (date, player_name, stat_type, stat_value) VALUES (?, ?, ?, ?)',
             (date, player_name, stat_type, stat_value)
+        )
+        if close_conn:
+            conn.commit()
+            conn.close()
+
+    @staticmethod
+    def insert_many(rows: list, conn: Optional[sqlite3.Connection] = None):
+        close_conn = conn is None
+        if close_conn:
+            conn = get_connection()
+        conn.executemany(
+            'INSERT OR REPLACE INTO player_stats (date, player_name, stat_type, stat_value) VALUES (?, ?, ?, ?)',
+            rows
         )
         if close_conn:
             conn.commit()
@@ -208,6 +234,19 @@ class DetailStatsRepository:
         conn.execute(
             'INSERT OR REPLACE INTO detail_stats (date, player_name, stat_domain, stat_category, stat_key, stat_value) VALUES (?, ?, ?, ?, ?, ?)',
             (date, player_name, stat_domain, stat_category, stat_key, stat_value)
+        )
+        if close_conn:
+            conn.commit()
+            conn.close()
+
+    @staticmethod
+    def insert_many(rows: list, conn: Optional[sqlite3.Connection] = None):
+        close_conn = conn is None
+        if close_conn:
+            conn = get_connection()
+        conn.executemany(
+            'INSERT OR REPLACE INTO detail_stats (date, player_name, stat_domain, stat_category, stat_key, stat_value) VALUES (?, ?, ?, ?, ?, ?)',
+            rows
         )
         if close_conn:
             conn.commit()

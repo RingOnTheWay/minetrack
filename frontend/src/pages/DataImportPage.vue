@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, onBeforeUnmount, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { apiPost, apiDelete, apiGet } from '@/services/api'
+import { apiPost, apiDelete, apiGet, consumeSSE } from '@/services/api'
 import { useDataStore } from '@/stores/data'
 import { Upload, Trash2, Database, Loader2, FolderOpen, Calendar, Play, HardDrive, ArrowLeft, Folder, Lock } from 'lucide-vue-next'
 import DatePickerPopup from '@/components/DatePickerPopup.vue'
@@ -120,34 +120,21 @@ async function handleBatchScan() {
   if (!batchFolder.value.trim()) return
   batchLoading.value = true; batchResult.value = null; batchError.value = ''
   globalLoading.value = true; globalLoadingText.value = t('dataManage.batchScan')
+  progressTotal.value = 0; progressCurrent.value = 0
 
   try {
-    const listRes = await apiPost<{ folders: { folder: string; date: string }[]; total: number }>('/api/list_scannable', { parent_folder: batchFolder.value.trim() })
-    const folders: { folder: string; date: string }[] = listRes.folders
-    if (folders.length === 0) {
-      batchResult.value = { imported: 0, total: 0, filtered_count: 0 }
-      globalLoading.value = false
-      batchLoading.value = false
-      return
-    }
-
-    progressTotal.value = folders.length
-    progressCurrent.value = 0
-    let imported = 0, filteredCount = 0
-
-    for (const item of folders) {
-      progressCurrent.value++
-      globalLoadingText.value = `${t('dataManage.batchScan')} (${progressCurrent.value}/${progressTotal.value})`
-      await nextTick()
-      try {
-        const res = await apiPost<{ filtered_count?: number }>('/api/scan', { folder: item.folder })
-        if (res.filtered_count) filteredCount += res.filtered_count
-        imported++
-      } catch { /* skip failed */ }
-    }
-
-    batchResult.value = { imported, total: folders.length, filtered_count: filteredCount }
-    globalLoading.value = false
+    await consumeSSE('/api/batch_scan_stream', { parent_folder: batchFolder.value.trim() }, {
+      onStart: (data) => { progressTotal.value = data.total },
+      onProgress: (data) => {
+        progressTotal.value = data.total
+        progressCurrent.value = data.current
+        globalLoadingText.value = `${t('dataManage.batchScan')} (${data.current}/${data.total})`
+      },
+      onComplete: (data) => {
+        batchResult.value = { imported: data.imported, total: data.total, filtered_count: data.filtered_count }
+        globalLoading.value = false
+      },
+    })
     await refreshAllData()
   } catch (e: any) {
     batchError.value = e.message || t('dataManage.operationFailed')
@@ -176,65 +163,47 @@ async function handleBatchDelete() {
   progressCurrent.value = 0
   globalLoading.value = true; globalLoadingText.value = t('dataManage.batchDelete')
 
-  let totalMap = 0, totalPlayer = 0, totalDetail = 0, successCount = 0
-
-  for (const date of datesToDelete) {
-    progressCurrent.value++
-    globalLoadingText.value = `${t('dataManage.batchDelete')} (${progressCurrent.value}/${progressTotal.value})`
-    await nextTick()
-    try {
-      const res = await apiDelete<{ map_records_deleted: number; player_records_deleted: number; detail_records_deleted: number }>('/api/delete_date', { date })
-      totalMap += res.map_records_deleted || 0
-      totalPlayer += res.player_records_deleted || 0
-      totalDetail += res.detail_records_deleted || 0
-      successCount++
-    } catch { /* skip failed */ }
+  try {
+    await consumeSSE('/api/batch_delete_stream', { dates: datesToDelete }, {
+      onStart: (data) => { progressTotal.value = data.total },
+      onProgress: (data) => {
+        progressCurrent.value = data.current
+        progressTotal.value = data.total
+        globalLoadingText.value = `${t('dataManage.batchDelete')} (${data.current}/${data.total})`
+      },
+      onComplete: (data) => {
+        deleteResult.value = {
+          total_dates: data.total_dates,
+          total_map_deleted: data.total_map_deleted,
+          total_player_deleted: data.total_player_deleted,
+          total_detail_deleted: data.total_detail_deleted,
+        }
+        globalLoading.value = false
+      },
+    })
+    rangeStart.value = ''; rangeEnd.value = ''; rangeMatchedDates.value = []
+    await refreshAllData()
+  } catch (e: any) {
+    deleteError.value = e.message || t('dataManage.operationFailed')
+  } finally {
+    deleteLoading.value = false; globalLoading.value = false
   }
-
-  deleteResult.value = {
-    total_dates: successCount,
-    total_map_deleted: totalMap,
-    total_player_deleted: totalPlayer,
-    total_detail_deleted: totalDetail,
-  }
-  rangeStart.value = ''; rangeEnd.value = ''; rangeMatchedDates.value = []
-  globalLoading.value = false
-  await refreshAllData()
-  deleteLoading.value = false
 }
 
 async function handleDeleteAll() {
   showDeleteAllConfirm.value = false
   deleteAllLoading.value = true; deleteAllResult.value = null; deleteAllError.value = ''
-  const allDates = [...dates.value]
-  progressTotal.value = allDates.length
-  progressCurrent.value = 0
-  globalLoading.value = true; globalLoadingText.value = t('dataManage.deleteAll')
+  globalLoading.value = true; globalLoadingText.value = t('dataManage.deleteAll'); progressTotal.value = 0
 
-  let totalMap = 0, totalPlayer = 0, totalDetail = 0, successCount = 0
-
-  for (const date of allDates) {
-    progressCurrent.value++
-    globalLoadingText.value = `${t('dataManage.deleteAll')} (${progressCurrent.value}/${progressTotal.value})`
-    await nextTick()
-    try {
-      const res = await apiDelete<{ map_records_deleted: number; player_records_deleted: number; detail_records_deleted: number }>('/api/delete_date', { date })
-      totalMap += res.map_records_deleted || 0
-      totalPlayer += res.player_records_deleted || 0
-      totalDetail += res.detail_records_deleted || 0
-      successCount++
-    } catch { /* skip failed */ }
+  try {
+    deleteAllResult.value = await apiDelete('/api/delete_all', {})
+    globalLoading.value = false
+    await refreshAllData()
+  } catch (e: any) {
+    deleteAllError.value = e.message || t('dataManage.operationFailed')
+  } finally {
+    deleteAllLoading.value = false; globalLoading.value = false
   }
-
-  deleteAllResult.value = {
-    total_dates: successCount,
-    total_map_deleted: totalMap,
-    total_player_deleted: totalPlayer,
-    total_detail_deleted: totalDetail,
-  }
-  globalLoading.value = false
-  await refreshAllData()
-  deleteAllLoading.value = false
 }
 
 function computeRangeDates() {

@@ -14,11 +14,12 @@ from backend.database.repositories import (
 from backend.services.parser import (
     load_usercache,
     parse_player_stats,
-    parse_detail_stats_by_domain,
+    parse_detail_stats,
     parse_battle_stats,
     parse_craft_stats,
     parse_item_stats,
     parse_block_stats,
+    DOMAIN_CATEGORIES,
 )
 
 
@@ -127,25 +128,100 @@ def should_include_player(player_name: str, play_time_seconds: int,
     return False
 
 
+def parse_all_stats(stats_folder: str):
+    import json as _json
+    from pathlib import Path
+
+    player_stats = {}
+    all_details = {'battle': {}, 'craft': {}, 'item': {}, 'block': {}}
+    stats_path = Path(stats_folder)
+
+    if not stats_path.exists():
+        return player_stats, all_details
+
+    for stat_file in stats_path.glob('*.json'):
+        player_uuid = stat_file.stem
+        try:
+            with open(stat_file, 'r', encoding='utf-8') as f:
+                data = _json.load(f)
+
+            stats = data.get('stats', {})
+            custom = stats.get('minecraft:custom', {})
+            player_data = {
+                'play_time': custom.get('minecraft:play_time', 0) // 20,
+                'deaths': custom.get('minecraft:deaths', 0),
+                'mob_kills': custom.get('minecraft:mob_kills', 0),
+                'player_kills': custom.get('minecraft:player_kills', 0),
+                'damage_dealt': custom.get('minecraft:damage_dealt', 0),
+                'damage_taken': custom.get('minecraft:damage_taken', 0),
+                'distance_walked': custom.get('minecraft:walk_one_cm', 0) // 100,
+                'jumps': custom.get('minecraft:jump', 0),
+                'sprint_one_cm': custom.get('minecraft:sprint_one_cm', 0),
+                'walk_one_cm': custom.get('minecraft:walk_one_cm', 0),
+                'fly_one_cm': custom.get('minecraft:fly_one_cm', 0),
+                'climb_one_cm': custom.get('minecraft:climb_one_cm', 0),
+                'swim_one_cm': custom.get('minecraft:swim_one_cm', 0),
+                'horse_one_cm': custom.get('minecraft:horse_one_cm', 0),
+                'boat_one_cm': custom.get('minecraft:boat_one_cm', 0),
+                'aviate_one_cm': custom.get('minecraft:aviate_one_cm', 0),
+                'fall_one_cm': custom.get('minecraft:fall_one_cm', 0),
+                'sleep_in_bed': custom.get('minecraft:sleep_in_bed', 0),
+                'fish_caught': custom.get('minecraft:fish_caught', 0),
+                'animals_bred': custom.get('minecraft:animals_bred', 0),
+                'traded_with_villager': custom.get('minecraft:traded_with_villager', 0),
+                'talked_to_villager': custom.get('minecraft:talked_to_villager', 0),
+                'enchant_item': custom.get('minecraft:enchant_item', 0),
+                'interact_with_crafting_table': custom.get('minecraft:interact_with_crafting_table', 0),
+                'interact_with_furnace': custom.get('minecraft:interact_with_furnace', 0),
+                'interact_with_anvil': custom.get('minecraft:interact_with_anvil', 0),
+                'open_chest': custom.get('minecraft:open_chest', 0),
+                'bell_ring': custom.get('minecraft:bell_ring', 0),
+                'drop_count': custom.get('minecraft:drop', 0),
+                'eat_cake_slice': custom.get('minecraft:eat_cake_slice', 0),
+                'sneak_time': custom.get('minecraft:sneak_time', 0) // 20,
+                'leave_game': custom.get('minecraft:leave_game', 0),
+            }
+            player_stats[player_uuid] = player_data
+
+            for domain, categories in DOMAIN_CATEGORIES.items():
+                player_detail = {}
+                for category_key, category_name in categories.items():
+                    category_data = stats.get(category_name, {})
+                    for item_key, count in category_data.items():
+                        simplified_key = item_key.replace('minecraft:', '')
+                        player_detail[f"{category_key}:{simplified_key}"] = count
+                if player_detail:
+                    all_details[domain][player_uuid] = player_detail
+
+        except Exception as e:
+            print(f"Error parsing {stat_file}: {e}")
+
+    return player_stats, all_details
+
+
 def scan_server_folder(server_folder: str, date: str = None,
-                       filter_config: dict = None) -> dict:
+                       filter_config: dict = None,
+                       conn: Optional[sqlite3.Connection] = None) -> dict:
     if filter_config is None:
         filter_config = {}
 
     if date is None:
         date = parse_date_from_server_properties(server_folder)
 
-    conn = get_connection()
+    own_conn = conn is None
+    if own_conn:
+        conn = get_connection()
 
     uuid_to_name = load_usercache(server_folder)
 
     map_data = scan_map_sizes(server_folder, date, conn)
 
     stats_folder = os.path.join(server_folder, 'world', 'players', 'stats')
-    player_stats = parse_player_stats(stats_folder)
+    player_stats, all_details = parse_all_stats(stats_folder)
     total_players = len(player_stats)
     filtered_count = 0
 
+    player_rows = []
     for player_uuid, stats in player_stats.items():
         player_name = uuid_to_name.get(player_uuid, player_uuid)
         play_time_seconds = stats.get('play_time', 0)
@@ -153,83 +229,42 @@ def scan_server_folder(server_folder: str, date: str = None,
             filtered_count += 1
             continue
         for stat_type, stat_value in stats.items():
-            PlayerStatsRepository.insert_or_replace(date, player_name, stat_type, stat_value, conn)
+            player_rows.append((date, player_name, stat_type, stat_value))
 
-    battle_stats = parse_battle_stats(stats_folder)
-    battle_count = 0
-    for player_uuid, stats in battle_stats.items():
-        player_name = uuid_to_name.get(player_uuid, player_uuid)
-        play_time_seconds = player_stats.get(player_uuid, {}).get('play_time', 0)
-        if not should_include_player(player_name, play_time_seconds, filter_config):
-            continue
-        for stat_key, stat_value in stats.items():
-            parts = stat_key.split(':', 1)
-            if len(parts) == 2:
-                stat_category, mob_name = parts
-                DetailStatsRepository.insert_or_replace(
-                    date, player_name, 'battle', stat_category, mob_name, stat_value, conn
-                )
-                battle_count += 1
+    if player_rows:
+        PlayerStatsRepository.insert_many(player_rows, conn)
 
-    craft_stats = parse_craft_stats(stats_folder)
-    craft_count = 0
-    for player_uuid, stats in craft_stats.items():
-        player_name = uuid_to_name.get(player_uuid, player_uuid)
-        play_time_seconds = player_stats.get(player_uuid, {}).get('play_time', 0)
-        if not should_include_player(player_name, play_time_seconds, filter_config):
-            continue
-        for stat_key, stat_value in stats.items():
-            parts = stat_key.split(':', 1)
-            if len(parts) == 2:
-                stat_category, item_name = parts
-                DetailStatsRepository.insert_or_replace(
-                    date, player_name, 'craft', stat_category, item_name, stat_value, conn
-                )
-                craft_count += 1
+    detail_rows = []
+    detail_counts = {'battle': 0, 'craft': 0, 'item': 0, 'block': 0}
 
-    item_stats = parse_item_stats(stats_folder)
-    item_count = 0
-    for player_uuid, stats in item_stats.items():
-        player_name = uuid_to_name.get(player_uuid, player_uuid)
-        play_time_seconds = player_stats.get(player_uuid, {}).get('play_time', 0)
-        if not should_include_player(player_name, play_time_seconds, filter_config):
-            continue
-        for stat_key, stat_value in stats.items():
-            parts = stat_key.split(':', 1)
-            if len(parts) == 2:
-                stat_category, item_name = parts
-                DetailStatsRepository.insert_or_replace(
-                    date, player_name, 'item', stat_category, item_name, stat_value, conn
-                )
-                item_count += 1
+    for domain in ('battle', 'craft', 'item', 'block'):
+        for player_uuid, stats in all_details[domain].items():
+            player_name = uuid_to_name.get(player_uuid, player_uuid)
+            play_time_seconds = player_stats.get(player_uuid, {}).get('play_time', 0)
+            if not should_include_player(player_name, play_time_seconds, filter_config):
+                continue
+            for stat_key, stat_value in stats.items():
+                parts = stat_key.split(':', 1)
+                if len(parts) == 2:
+                    stat_category, item_name = parts
+                    detail_rows.append((date, player_name, domain, stat_category, item_name, stat_value))
+                    detail_counts[domain] += 1
 
-    block_stats = parse_block_stats(stats_folder)
-    block_count = 0
-    for player_uuid, stats in block_stats.items():
-        player_name = uuid_to_name.get(player_uuid, player_uuid)
-        play_time_seconds = player_stats.get(player_uuid, {}).get('play_time', 0)
-        if not should_include_player(player_name, play_time_seconds, filter_config):
-            continue
-        for stat_key, stat_value in stats.items():
-            parts = stat_key.split(':', 1)
-            if len(parts) == 2:
-                stat_category, block_name = parts
-                DetailStatsRepository.insert_or_replace(
-                    date, player_name, 'block', stat_category, block_name, stat_value, conn
-                )
-                block_count += 1
+    if detail_rows:
+        DetailStatsRepository.insert_many(detail_rows, conn)
 
-    conn.commit()
-    conn.close()
+    if own_conn:
+        conn.commit()
+        conn.close()
 
     result = {
         'date': date,
         'maps': map_data,
         'player_count': total_players - filtered_count,
-        'battle_stats_count': battle_count,
-        'craft_stats_count': craft_count,
-        'item_stats_count': item_count,
-        'block_stats_count': block_count,
+        'battle_stats_count': detail_counts['battle'],
+        'craft_stats_count': detail_counts['craft'],
+        'item_stats_count': detail_counts['item'],
+        'block_stats_count': detail_counts['block'],
     }
 
     if filtered_count > 0:
@@ -237,7 +272,6 @@ def scan_server_folder(server_folder: str, date: str = None,
         result['total_players'] = total_players
 
     return result
-
 
 
 def parse_date_from_folder_name(folder_name: str) -> str:

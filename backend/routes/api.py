@@ -5,7 +5,7 @@ import sys
 import subprocess
 from datetime import datetime
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, Response
 
 from backend.config import DB_FILE, DATA_JSON
 from backend.database.repositories import (
@@ -325,6 +325,114 @@ def list_scannable():
         folders.append({'folder': item_path, 'date': date})
 
     return jsonify({'folders': folders, 'total': len(folders)})
+
+
+@api_bp.route('/api/batch_scan_stream', methods=['POST'])
+def batch_scan_stream():
+    import json as _json
+
+    data = request.json
+    parent_folder = data.get('parent_folder')
+
+    if not parent_folder or not os.path.exists(parent_folder):
+        return jsonify({'error': '父文件夹不存在'}), 400
+
+    from backend.services.scanner import parse_date_from_server_properties, parse_date_from_folder_name
+
+    folders = []
+    for item in sorted(os.listdir(parent_folder)):
+        item_path = os.path.join(parent_folder, item)
+        if not os.path.isdir(item_path):
+            continue
+        world_path = os.path.join(item_path, 'world')
+        if not os.path.exists(world_path):
+            continue
+        try:
+            date = parse_date_from_server_properties(item_path)
+        except ValueError:
+            try:
+                date = parse_date_from_folder_name(item)
+            except ValueError:
+                mtime = os.path.getmtime(item_path)
+                date = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d')
+        folders.append({'folder': item_path, 'date': date, 'name': item})
+
+    filter_config = SettingsRepository.get_filter_config()
+
+    def generate():
+        total = len(folders)
+        yield f"data: {_json.dumps({'type': 'start', 'total': total})}\n\n"
+
+        conn = get_connection()
+        imported = 0
+        filtered_count = 0
+        errors = []
+
+        for i, item in enumerate(folders):
+            yield f"data: {_json.dumps({'type': 'progress', 'current': i + 1, 'total': total, 'name': item['name']})}\n\n"
+            try:
+                result = scan_server_folder(item['folder'], date=item['date'], filter_config=filter_config, conn=conn)
+                if result.get('filtered_count', 0) > 0:
+                    filtered_count += result['filtered_count']
+                imported += 1
+                if (i + 1) % 5 == 0 or i == total - 1:
+                    conn.commit()
+            except Exception as e:
+                errors.append({'folder': item['name'], 'error': str(e)})
+
+        conn.close()
+
+        yield f"data: {_json.dumps({'type': 'complete', 'imported': imported, 'total': total, 'filtered_count': filtered_count, 'errors': errors})}\n\n"
+
+    return Response(generate(), mimetype='text/event-stream', headers={
+        'Cache-Control': 'no-cache',
+        'X-Accel-Buffering': 'no',
+    })
+
+
+@api_bp.route('/api/batch_delete_stream', methods=['POST'])
+def batch_delete_stream():
+    import json as _json
+
+    data = request.json
+    dates_to_delete = data.get('dates', [])
+
+    if not dates_to_delete:
+        return jsonify({'error': '请提供日期列表'}), 400
+
+    def generate():
+        total = len(dates_to_delete)
+        yield f"data: {_json.dumps({'type': 'start', 'total': total})}\n\n"
+
+        conn = get_connection()
+        total_map = 0
+        total_player = 0
+        total_detail = 0
+        success_count = 0
+
+        for i, date in enumerate(dates_to_delete):
+            yield f"data: {_json.dumps({'type': 'progress', 'current': i + 1, 'total': total, 'date': date})}\n\n"
+
+            map_deleted = MapSizeRepository.delete_by_date(date, conn)
+            player_deleted = PlayerStatsRepository.delete_by_date(date, conn)
+            detail_deleted = DetailStatsRepository.delete_by_date(date, conn)
+
+            total_map += map_deleted
+            total_player += player_deleted
+            total_detail += detail_deleted
+            success_count += 1
+
+            if (i + 1) % 10 == 0 or i == total - 1:
+                conn.commit()
+
+        conn.close()
+
+        yield f"data: {_json.dumps({'type': 'complete', 'total_dates': success_count, 'total_map_deleted': total_map, 'total_player_deleted': total_player, 'total_detail_deleted': total_detail})}\n\n"
+
+    return Response(generate(), mimetype='text/event-stream', headers={
+        'Cache-Control': 'no-cache',
+        'X-Accel-Buffering': 'no',
+    })
 
 
 @api_bp.route('/api/settings', methods=['GET'])
