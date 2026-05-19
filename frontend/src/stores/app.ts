@@ -108,6 +108,46 @@ export const useAppStore = defineStore('app', () => {
     return 10
   })())
 
+  const defaultSelectedPlayers = ref<string[]>((() => {
+    try {
+      const stored = localStorage.getItem('defaultSelectedPlayers')
+      if (stored !== null) return JSON.parse(stored)
+    } catch {}
+    return []
+  })())
+
+  const filterEnabled = ref<boolean>((() => {
+    try {
+      const stored = localStorage.getItem('filterEnabled')
+      if (stored !== null) return stored === 'true'
+    } catch {}
+    return false
+  })())
+
+  const minPlaytimeHours = ref<number>((() => {
+    try {
+      const stored = localStorage.getItem('minPlaytimeHours')
+      if (stored !== null) return parseFloat(stored) || 1
+    } catch {}
+    return 1
+  })())
+
+  const whitelist = ref<string[]>((() => {
+    try {
+      const stored = localStorage.getItem('whitelist')
+      if (stored !== null) return JSON.parse(stored)
+    } catch {}
+    return []
+  })())
+
+  const blacklist = ref<string[]>((() => {
+    try {
+      const stored = localStorage.getItem('blacklist')
+      if (stored !== null) return JSON.parse(stored)
+    } catch {}
+    return []
+  })())
+
   const currentTheme = computed<ThemeColor>(() => findPreset(themeColorPrimary.value))
   const isLocal = computed(() => mode.value === 'local')
   const isStatic = computed(() => mode.value === 'static')
@@ -147,6 +187,26 @@ export const useAppStore = defineStore('app', () => {
     maxLegendPlayers.value = val
   }
 
+  function setDefaultSelectedPlayers(val: string[]) {
+    defaultSelectedPlayers.value = val
+  }
+
+  function setFilterEnabled(val: boolean) {
+    filterEnabled.value = val
+  }
+
+  function setMinPlaytimeHours(val: number) {
+    minPlaytimeHours.value = val
+  }
+
+  function setWhitelist(val: string[]) {
+    whitelist.value = val
+  }
+
+  function setBlacklist(val: string[]) {
+    blacklist.value = val
+  }
+
   watch(darkMode, (val) => {
     applyDarkMode(val)
     try {
@@ -180,6 +240,36 @@ export const useAppStore = defineStore('app', () => {
     } catch {}
   })
 
+  watch(defaultSelectedPlayers, (val) => {
+    try {
+      localStorage.setItem('defaultSelectedPlayers', JSON.stringify(val))
+    } catch {}
+  }, { deep: true })
+
+  watch(filterEnabled, (val) => {
+    try {
+      localStorage.setItem('filterEnabled', String(val))
+    } catch {}
+  })
+
+  watch(minPlaytimeHours, (val) => {
+    try {
+      localStorage.setItem('minPlaytimeHours', String(val))
+    } catch {}
+  })
+
+  watch(whitelist, (val) => {
+    try {
+      localStorage.setItem('whitelist', JSON.stringify(val))
+    } catch {}
+  }, { deep: true })
+
+  watch(blacklist, (val) => {
+    try {
+      localStorage.setItem('blacklist', JSON.stringify(val))
+    } catch {}
+  }, { deep: true })
+
   function initialize() {
     const searchParams = new URLSearchParams(window.location.search)
     if (searchParams.get('mode') === 'static' || window.location.protocol === 'file:') {
@@ -210,6 +300,11 @@ export const useAppStore = defineStore('app', () => {
     navVisibility,
     showChartTotal,
     maxLegendPlayers,
+    defaultSelectedPlayers,
+    filterEnabled,
+    minPlaytimeHours,
+    whitelist,
+    blacklist,
     currentTheme,
     isLocal,
     isStatic,
@@ -224,5 +319,10 @@ export const useAppStore = defineStore('app', () => {
     isNavVisible,
     toggleChartTotal,
     setMaxLegendPlayers,
+    setDefaultSelectedPlayers,
+    setFilterEnabled,
+    setMinPlaytimeHours,
+    setWhitelist,
+    setBlacklist,
   }
 })

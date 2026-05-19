@@ -41,13 +41,6 @@ def init_db():
         )
     ''')
 
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS settings (
-            key TEXT PRIMARY KEY,
-            value TEXT NOT NULL
-        )
-    ''')
-
     conn.commit()
     conn.close()
     print("数据库初始化完成（WAL 模式）")

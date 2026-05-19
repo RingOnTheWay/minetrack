@@ -154,7 +154,13 @@
     "license": "License",
     "projectRepo": "Repository",
     "version": "Version",
-    "buildDate": "Build Date"
+    "buildDate": "Build Date",
+    "defaultSelectedPlayers": "Default Selected Players",
+    "defaultSelectedPlayersDesc": "Set players selected by default when opening stats pages; empty means all selected",
+    "defaultSelectedEmpty": "Not set, all players selected by default",
+    "defaultSelectedHint": "When configured, stats pages will select these players by default; others can still be manually checked. When empty, all players are shown by default.",
+    "selectFromPlayers": "Select from player list",
+    "clearAll": "Clear All"
   },
   "dateRange": {
     "allDates": "All Dates",
@@ -172,7 +178,9 @@
     "singleScan": "Single Scan Import",
     "serverFolder": "Server Folder Path",
     "folderPlaceholder": "Enter the folder path",
-    "scanDate": "Server Date",
+    "scanDate": "Data Date",
+    "scanDatePlaceholder": "Leave empty to auto-detect",
+    "scanDateHint": "Specify the data date, leave empty to auto-detect from server.properties",
     "startScan": "Start Scan",
     "scanSuccess": "Scan import successful",
     "date": "Date",

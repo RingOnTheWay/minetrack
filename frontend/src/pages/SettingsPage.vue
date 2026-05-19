@@ -2,16 +2,17 @@
 import { computed, ref, onMounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore, themePresets } from '@/stores/app'
+import { useDataStore } from '@/stores/data'
 import type { NavKey } from '@/stores/app'
-import { Palette, User, Code, ExternalLink, Check, Scale, Calendar, LayoutList, Lock, BarChart3, Filter, X, Plus, Shield, ShieldOff, Clock, Pickaxe } from 'lucide-vue-next'
+import { Palette, User, Code, ExternalLink, Check, Scale, Calendar, LayoutList, Lock, BarChart3, Filter, X, Plus, Shield, ShieldOff, Clock, Pickaxe, UserCheck, Search } from 'lucide-vue-next'
 import {
   LayoutDashboard, Map, Users, Swords, Hammer, Package, TrendingUp,
   Database,
 } from 'lucide-vue-next'
-import { getSettings, updateSettings, type FilterConfig } from '@/services/api'
 
 const { t } = useI18n()
 const app = useAppStore()
+const data = useDataStore()
 
 const buildDate = __BUILD_DATE__ as string
 
@@ -52,103 +53,113 @@ function toggleNav(key: NavKey) {
   app.toggleNavVisibility(key)
 }
 
-const filterEnabled = ref(false)
-const minPlaytimeHours = ref(1)
-const whitelist = ref<string[]>([])
-const blacklist = ref<string[]>([])
-const settingsLoading = ref(false)
-const settingsSaving = ref(false)
 const whitelistInput = ref('')
 const blacklistInput = ref('')
 const whitelistInputRef = ref<HTMLInputElement | null>(null)
 const blacklistInputRef = ref<HTMLInputElement | null>(null)
 const maxLegendPlayers = ref(app.maxLegendPlayers)
+const defaultSelectedInput = ref('')
+const defaultSelectedDropdownOpen = ref(false)
+const defaultSelectedSearch = ref('')
+const defaultSelectedDropdownRef = ref<HTMLElement | null>(null)
+const defaultSelectedSearchRef = ref<HTMLInputElement | null>(null)
 
-onMounted(async () => {
-  if (app.isStatic) return
-  settingsLoading.value = true
-  try {
-    const settings = await getSettings()
-    filterEnabled.value = settings.filter_enabled === 'true'
-    minPlaytimeHours.value = parseFloat(settings.min_playtime_hours) || 1
-    whitelist.value = JSON.parse(settings.whitelist || '[]')
-    blacklist.value = JSON.parse(settings.blacklist || '[]')
-    const mlp = parseInt(settings.max_legend_players, 10)
-    if (mlp > 0) {
-      maxLegendPlayers.value = mlp
-      app.setMaxLegendPlayers(mlp)
-    }
-  } catch {
-  } finally {
-    settingsLoading.value = false
-  }
+const sortedAllPlayers = computed(() => Array.from(data.allPlayers).sort())
+
+const filteredDefaultPlayers = computed(() => {
+  const q = defaultSelectedSearch.value.trim().toLowerCase()
+  if (!q) return sortedAllPlayers.value
+  return sortedAllPlayers.value.filter(p => p.toLowerCase().includes(q))
 })
 
-async function saveSettings() {
-  settingsSaving.value = true
-  try {
-    await updateSettings({
-      filter_enabled: String(filterEnabled.value),
-      min_playtime_hours: String(minPlaytimeHours.value),
-      whitelist: JSON.stringify(whitelist.value),
-      blacklist: JSON.stringify(blacklist.value),
-      max_legend_players: String(maxLegendPlayers.value),
-    })
-    app.setMaxLegendPlayers(maxLegendPlayers.value)
-  } catch {
-  } finally {
-    settingsSaving.value = false
+const defaultSelectedSet = computed(() => new Set(app.defaultSelectedPlayers))
+
+function addDefaultSelected(name: string) {
+  const trimmed = name.trim()
+  if (!trimmed) return
+  if (app.defaultSelectedPlayers.includes(trimmed)) return
+  app.setDefaultSelectedPlayers([...app.defaultSelectedPlayers, trimmed])
+  defaultSelectedInput.value = ''
+}
+
+function removeDefaultSelected(name: string) {
+  app.setDefaultSelectedPlayers(app.defaultSelectedPlayers.filter(p => p !== name))
+}
+
+function toggleDefaultSelectedFromDropdown(p: string) {
+  if (defaultSelectedSet.value.has(p)) {
+    removeDefaultSelected(p)
+  } else {
+    addDefaultSelected(p)
   }
 }
 
+function clearDefaultSelected() {
+  app.setDefaultSelectedPlayers([])
+}
+
+function toggleDefaultSelectedDropdown(e: MouseEvent) {
+  e.stopPropagation()
+  defaultSelectedDropdownOpen.value = !defaultSelectedDropdownOpen.value
+  if (defaultSelectedDropdownOpen.value) {
+    defaultSelectedSearch.value = ''
+    nextTick(() => defaultSelectedSearchRef.value?.focus())
+  }
+}
+
+function handleClickOutsideDefaultDropdown(e: MouseEvent) {
+  if (defaultSelectedDropdownRef.value && !defaultSelectedDropdownRef.value.contains(e.target as Node)) {
+    defaultSelectedDropdownOpen.value = false
+    defaultSelectedSearch.value = ''
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutsideDefaultDropdown)
+})
+
 function toggleFilterEnabled() {
-  filterEnabled.value = !filterEnabled.value
-  saveSettings()
+  app.setFilterEnabled(!app.filterEnabled)
 }
 
 function onMinPlaytimeChange() {
-  if (minPlaytimeHours.value < 0) minPlaytimeHours.value = 0
-  saveSettings()
+  if (app.minPlaytimeHours < 0) app.setMinPlaytimeHours(0)
 }
 
 function onMaxLegendPlayersChange() {
   if (maxLegendPlayers.value < 1) maxLegendPlayers.value = 1
   if (maxLegendPlayers.value > 100) maxLegendPlayers.value = 100
-  saveSettings()
+  app.setMaxLegendPlayers(maxLegendPlayers.value)
 }
 
 function addToWhitelist(name: string) {
   const trimmed = name.trim()
   if (!trimmed) return
-  if (whitelist.value.includes(trimmed)) return
-  whitelist.value.push(trimmed)
-  const idx = blacklist.value.indexOf(trimmed)
-  if (idx !== -1) blacklist.value.splice(idx, 1)
+  if (app.whitelist.includes(trimmed)) return
+  const newWhitelist = [...app.whitelist, trimmed]
+  const newBlacklist = app.blacklist.filter(p => p !== trimmed)
+  app.setWhitelist(newWhitelist)
+  app.setBlacklist(newBlacklist)
   whitelistInput.value = ''
-  saveSettings()
 }
 
 function removeFromWhitelist(name: string) {
-  const idx = whitelist.value.indexOf(name)
-  if (idx !== -1) whitelist.value.splice(idx, 1)
-  saveSettings()
+  app.setWhitelist(app.whitelist.filter(p => p !== name))
 }
 
 function addToBlacklist(name: string) {
   const trimmed = name.trim()
   if (!trimmed) return
-  if (blacklist.value.includes(trimmed)) return
-  blacklist.value.push(trimmed)
-  const idx = whitelist.value.indexOf(trimmed)
-  if (idx !== -1) whitelist.value.splice(idx, 1)
+  if (app.blacklist.includes(trimmed)) return
+  const newBlacklist = [...app.blacklist, trimmed]
+  const newWhitelist = app.whitelist.filter(p => p !== trimmed)
+  app.setBlacklist(newBlacklist)
+  app.setWhitelist(newWhitelist)
   blacklistInput.value = ''
-  saveSettings()
 }
 
 function removeFromBlacklist(name: string) {
-  const idx = blacklist.value.indexOf(name)
-  if (idx !== -1) blacklist.value.splice(idx, 1)
-  saveSettings()
+  app.setBlacklist(app.blacklist.filter(p => p !== name))
 }
 
 function onWhitelistKeydown(e: KeyboardEvent) {
@@ -352,7 +363,112 @@ function onBlacklistKeydown(e: KeyboardEvent) {
       <div class="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-brand/5 dark:from-brand/3 to-transparent rounded-full blur-3xl" />
 
       <div class="relative">
-        <div class="flex items-center justify-between" :class="filterEnabled ? 'mb-8' : ''">
+        <div class="flex items-center gap-4 mb-6">
+          <div class="w-12 h-12 bg-gradient-to-br from-brand/20 to-brand/10 rounded-xl flex items-center justify-center">
+            <UserCheck class="w-6 h-6 text-brand dark:text-brand-light" />
+          </div>
+          <div class="flex-1">
+            <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">{{ t('settings.defaultSelectedPlayers') }}</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('settings.defaultSelectedPlayersDesc') }}</p>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <div class="flex flex-wrap gap-2 min-h-[2rem]">
+            <span
+              v-for="name in app.defaultSelectedPlayers"
+              :key="'ds-'+name"
+              class="inline-flex items-center gap-1 px-2.5 py-1 bg-brand/10 dark:bg-brand/20 text-brand dark:text-brand-light text-xs font-medium rounded-lg border border-brand/20 dark:border-brand/30"
+            >
+              {{ name }}
+              <button class="hover:bg-brand/20 dark:hover:bg-brand/30 rounded-full p-0.5 transition-colors" @click="removeDefaultSelected(name)">
+                <X class="w-3 h-3" />
+              </button>
+            </span>
+            <span v-if="app.defaultSelectedPlayers.length === 0" class="text-xs text-slate-400 dark:text-slate-500 italic">{{ t('settings.defaultSelectedEmpty') }}</span>
+          </div>
+
+          <div ref="defaultSelectedDropdownRef" class="relative" @click="defaultSelectedDropdownOpen && (defaultSelectedDropdownOpen = false, defaultSelectedSearch = '')">
+            <div class="flex gap-2">
+              <input
+                v-model="defaultSelectedInput"
+                type="text"
+                :placeholder="t('settings.addPlayerPlaceholder')"
+                class="flex-1 px-3 py-2 bg-white/80 dark:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-lg text-sm dark:text-slate-200 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand/40 transition-all"
+                @keydown.enter.prevent="addDefaultSelected(defaultSelectedInput)"
+              />
+              <button
+                class="px-3 py-2 bg-brand/10 dark:bg-brand/20 text-brand dark:text-brand-light hover:bg-brand/20 dark:hover:bg-brand/30 rounded-lg transition-all text-sm font-medium disabled:opacity-50"
+                :disabled="!defaultSelectedInput.trim()"
+                @click="addDefaultSelected(defaultSelectedInput)"
+              >
+                <Plus class="w-4 h-4" />
+              </button>
+              <button
+                class="px-3 py-2 bg-slate-100 dark:bg-slate-700/50 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700/70 rounded-lg transition-all text-sm font-medium disabled:opacity-50"
+                :disabled="app.defaultSelectedPlayers.length === 0"
+                @click="clearDefaultSelected"
+              >
+                {{ t('settings.clearAll') }}
+              </button>
+            </div>
+
+            <div class="mt-2">
+              <button
+                class="flex items-center gap-2 px-3 py-2 bg-white/80 dark:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-500 transition-all w-full"
+                @click.stop="toggleDefaultSelectedDropdown"
+              >
+                <Search class="w-4 h-4" />
+                <span>{{ t('settings.selectFromPlayers') }}</span>
+                <span class="ml-auto text-xs text-slate-400">{{ app.defaultSelectedPlayers.length }}/{{ sortedAllPlayers.length }}</span>
+              </button>
+
+              <div v-if="defaultSelectedDropdownOpen" class="absolute top-full mt-1 left-0 right-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-200 dark:border-slate-600 rounded-xl shadow-xl z-50 overflow-hidden" @click.stop>
+                <div class="p-2 border-b border-slate-100 dark:border-slate-700">
+                  <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-700/50">
+                    <Search class="w-4 h-4 text-slate-400 dark:text-slate-500 flex-shrink-0" />
+                    <input
+                      ref="defaultSelectedSearchRef"
+                      v-model="defaultSelectedSearch"
+                      type="text"
+                      :placeholder="t('common.searchPlayer')"
+                      class="flex-1 bg-transparent text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none"
+                      @click.stop
+                    />
+                  </div>
+                </div>
+                <div class="max-h-[260px] overflow-y-auto hide-scrollbar">
+                  <div
+                    v-for="p in filteredDefaultPlayers"
+                    :key="p"
+                    class="flex items-center gap-3 px-3 py-2 cursor-pointer transition-all text-sm"
+                    :class="defaultSelectedSet.has(p) ? 'bg-brand/10 dark:bg-brand/20 text-brand dark:text-brand-light' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50'"
+                    @click="toggleDefaultSelectedFromDropdown(p)"
+                  >
+                    <span class="flex-1">{{ p }}</span>
+                    <Check v-if="defaultSelectedSet.has(p)" class="w-4 h-4 text-brand dark:text-brand-light" />
+                  </div>
+                  <div v-if="filteredDefaultPlayers.length === 0" class="px-3 py-4 text-center text-sm text-slate-400 dark:text-slate-500">
+                    {{ t('common.noResults') }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <p class="text-xs text-slate-400 dark:text-slate-500">{{ t('settings.defaultSelectedHint') }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div
+      v-motion-slide-bottom :delay="93"
+      class="relative bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-8 border border-white/80 dark:border-slate-700/80 shadow-sm overflow-hidden"
+    >
+      <div class="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-brand/5 dark:from-brand/3 to-transparent rounded-full blur-3xl" />
+
+      <div class="relative">
+        <div class="flex items-center justify-between" :class="app.filterEnabled ? 'mb-8' : ''">
           <div class="flex items-center gap-4">
             <div class="w-12 h-12 bg-gradient-to-br from-brand/20 to-brand/10 rounded-xl flex items-center justify-center">
               <Filter class="w-6 h-6 text-brand dark:text-brand-light" />
@@ -365,17 +481,17 @@ function onBlacklistKeydown(e: KeyboardEvent) {
 
           <button
             class="relative w-12 h-7 rounded-full transition-all duration-300"
-            :class="filterEnabled ? 'bg-brand' : 'bg-slate-300 dark:bg-slate-600'"
+            :class="app.filterEnabled ? 'bg-brand' : 'bg-slate-300 dark:bg-slate-600'"
             @click="toggleFilterEnabled"
           >
             <div
               class="absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-sm transition-all duration-300"
-              :class="filterEnabled ? 'left-5.5' : 'left-0.5'"
+              :class="app.filterEnabled ? 'left-5.5' : 'left-0.5'"
             />
           </button>
         </div>
 
-        <div v-if="filterEnabled" class="space-y-6">
+        <div v-if="app.filterEnabled" class="space-y-6">
           <div>
             <div class="flex items-center gap-2 mb-3">
               <Clock class="w-4 h-4 text-brand dark:text-brand-light" />
@@ -384,7 +500,8 @@ function onBlacklistKeydown(e: KeyboardEvent) {
             <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">{{ t('settings.minPlaytimeDesc') }}</p>
             <div class="flex items-center gap-3">
               <input
-                v-model.number="minPlaytimeHours"
+                :value="app.minPlaytimeHours"
+                @input="app.setMinPlaytimeHours(parseFloat(($event.target as HTMLInputElement).value) || 0)"
                 type="number"
                 min="0"
                 step="0.5"
@@ -403,7 +520,7 @@ function onBlacklistKeydown(e: KeyboardEvent) {
             <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">{{ t('settings.whitelistDesc') }}</p>
             <div class="flex flex-wrap gap-2 mb-2 min-h-[2rem]">
               <span
-                v-for="name in whitelist"
+                v-for="name in app.whitelist"
                 :key="'w-'+name"
                 class="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-medium rounded-lg border border-emerald-200 dark:border-emerald-800/50"
               >
@@ -412,7 +529,7 @@ function onBlacklistKeydown(e: KeyboardEvent) {
                   <X class="w-3 h-3" />
                 </button>
               </span>
-              <span v-if="whitelist.length === 0" class="text-xs text-slate-400 dark:text-slate-500 italic">{{ t('settings.emptyList') }}</span>
+              <span v-if="app.whitelist.length === 0" class="text-xs text-slate-400 dark:text-slate-500 italic">{{ t('settings.emptyList') }}</span>
             </div>
             <div class="flex gap-2">
               <input
@@ -441,7 +558,7 @@ function onBlacklistKeydown(e: KeyboardEvent) {
             <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">{{ t('settings.blacklistDesc') }}</p>
             <div class="flex flex-wrap gap-2 mb-2 min-h-[2rem]">
               <span
-                v-for="name in blacklist"
+                v-for="name in app.blacklist"
                 :key="'b-'+name"
                 class="inline-flex items-center gap-1 px-2.5 py-1 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-medium rounded-lg border border-red-200 dark:border-red-800/50"
               >
@@ -450,7 +567,7 @@ function onBlacklistKeydown(e: KeyboardEvent) {
                   <X class="w-3 h-3" />
                 </button>
               </span>
-              <span v-if="blacklist.length === 0" class="text-xs text-slate-400 dark:text-slate-500 italic">{{ t('settings.emptyList') }}</span>
+              <span v-if="app.blacklist.length === 0" class="text-xs text-slate-400 dark:text-slate-500 italic">{{ t('settings.emptyList') }}</span>
             </div>
             <div class="flex gap-2">
               <input
@@ -552,3 +669,14 @@ function onBlacklistKeydown(e: KeyboardEvent) {
     </div>
   </div>
 </template>
+
+<style scoped>
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+</style>

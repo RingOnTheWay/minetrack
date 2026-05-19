@@ -30,22 +30,6 @@ export async function apiDelete<T>(endpoint: string, body: unknown): Promise<T> 
   return res.json()
 }
 
-export interface FilterConfig {
-  filter_enabled: string
-  min_playtime_hours: string
-  whitelist: string
-  blacklist: string
-  max_legend_players: string
-}
-
-export async function getSettings(): Promise<FilterConfig> {
-  return apiGet<FilterConfig>('/api/settings')
-}
-
-export async function updateSettings(settings: Partial<FilterConfig>): Promise<{ success: boolean; settings: FilterConfig }> {
-  return apiPost<{ success: boolean; settings: FilterConfig }>('/api/settings', settings)
-}
-
 export async function consumeSSE(
   url: string,
   body: unknown,

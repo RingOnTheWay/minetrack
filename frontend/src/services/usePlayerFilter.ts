@@ -1,4 +1,5 @@
 import { ref, computed } from 'vue'
+import { useAppStore } from '@/stores/app'
 
 export function usePlayerFilter(allPlayers: Set<string>) {
   const selected = ref<Set<string>>(new Set<string>())
@@ -8,8 +9,22 @@ export function usePlayerFilter(allPlayers: Set<string>) {
   )
 
   function init() {
-    selected.value.clear()
-    allPlayers.forEach(p => selected.value.add(p))
+    const app = useAppStore()
+    const defaults = app.defaultSelectedPlayers
+    if (defaults.length > 0) {
+      selected.value.clear()
+      for (const p of defaults) {
+        if (allPlayers.has(p)) {
+          selected.value.add(p)
+        }
+      }
+      if (selected.value.size === 0) {
+        allPlayers.forEach(p => selected.value.add(p))
+      }
+    } else {
+      selected.value.clear()
+      allPlayers.forEach(p => selected.value.add(p))
+    }
   }
 
   function toggle(player: string) {

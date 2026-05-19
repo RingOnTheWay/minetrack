@@ -14,6 +14,7 @@ const props = defineProps<{
   rangeStart?: string
   rangeEnd?: string
   popupStyle: { top: string; left: string }
+  freeSelect?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -119,13 +120,16 @@ function isInRange(date: string) {
 
 function getDayClass(date: string | null) {
   if (!date) return ''
+  const hasData = props.availableDates.includes(date)
   if (props.mode === 'single') {
     if (date === props.selectedDate) return selectedClass.value
-    return props.availableDates.includes(date) ? `dp-has-data ${hoverClass.value}` : 'dp-no-data pointer-events-none'
+    if (props.freeSelect) return hasData ? `dp-has-data ${hoverClass.value}` : `dp-free ${hoverClass.value}`
+    return hasData ? `dp-has-data ${hoverClass.value}` : 'dp-no-data pointer-events-none'
   }
   if (date === props.rangeStart || date === props.rangeEnd) return selectedClass.value
   if (isInRange(date)) return inRangeClass.value
-  return props.availableDates.includes(date) ? `dp-has-data ${hoverClass.value}` : 'dp-no-data pointer-events-none'
+  if (props.freeSelect) return hasData ? `dp-has-data ${hoverClass.value}` : `dp-free ${hoverClass.value}`
+  return hasData ? `dp-has-data ${hoverClass.value}` : 'dp-no-data pointer-events-none'
 }
 
 function getMonthClass(month: number) {
@@ -133,12 +137,14 @@ function getMonthClass(month: number) {
   const prefix = `${pickerYear.value}-${String(month + 1).padStart(2, '0')}`
   const isCurrentMonth = pickerMonth.value === month && props.availableDates.some(d => d.startsWith(prefix))
   if (isCurrentMonth) return selectedClass.value
+  if (props.freeSelect) return hasData ? `dp-has-data ${hoverClass.value}` : `dp-free ${hoverClass.value}`
   return hasData ? `dp-has-data ${hoverClass.value}` : 'dp-no-data pointer-events-none'
 }
 
 function getYearClass(year: number) {
   const hasData = yearHasData(year)
   if (year === pickerYear.value) return selectedClass.value
+  if (props.freeSelect) return hasData ? `dp-has-data ${hoverClass.value}` : `dp-free ${hoverClass.value}`
   return hasData ? `dp-has-data ${hoverClass.value}` : 'dp-no-data pointer-events-none'
 }
 
@@ -218,7 +224,7 @@ const selectHint = computed(() => {
           :key="date || 'null'"
           class="py-1.5 text-xs rounded-lg transition-all"
           :class="getDayClass(date)"
-          @click="date && availableDates.includes(date) && selectDate(date)"
+          @click="date && (freeSelect || availableDates.includes(date)) && selectDate(date)"
         >
           {{ date ? date.slice(8) : '' }}
         </button>
@@ -232,7 +238,7 @@ const selectHint = computed(() => {
           :key="i"
           class="py-2 text-xs rounded-lg transition-all"
           :class="getMonthClass(i)"
-          @click="monthHasData(pickerYear, i) && selectMonth(i)"
+          @click="(freeSelect || monthHasData(pickerYear, i)) && selectMonth(i)"
         >
           {{ name }}
         </button>
@@ -246,7 +252,7 @@ const selectHint = computed(() => {
           :key="y"
           class="py-2 text-xs rounded-lg transition-all"
           :class="getYearClass(yearRangeStart + y - 1)"
-          @click="yearHasData(yearRangeStart + y - 1) && selectYear(yearRangeStart + y - 1)"
+          @click="(freeSelect || yearHasData(yearRangeStart + y - 1)) && selectYear(yearRangeStart + y - 1)"
         >
           {{ yearRangeStart + y - 1 }}
         </button>

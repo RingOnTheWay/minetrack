@@ -3,18 +3,24 @@ import { ref, onMounted, computed, onBeforeUnmount, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { apiPost, apiDelete, apiGet, consumeSSE } from '@/services/api'
 import { useDataStore } from '@/stores/data'
+import { useAppStore } from '@/stores/app'
 import { Upload, Trash2, Database, Loader2, FolderOpen, Calendar, Play, HardDrive, ArrowLeft, Folder, Lock } from 'lucide-vue-next'
 import DatePickerPopup from '@/components/DatePickerPopup.vue'
 
 const { t } = useI18n()
 const dataStore = useDataStore()
+const app = useAppStore()
 
 const activeTab = ref<'import' | 'delete'>('import')
 
 const scanFolder = ref('')
+const scanDate = ref('')
 const scanLoading = ref(false)
 const scanResult = ref<any>(null)
 const scanError = ref('')
+
+const showScanDatePicker = ref(false)
+const scanDateInputRef = ref<HTMLElement | null>(null)
 
 const batchFolder = ref('')
 const batchLoading = ref(false)
@@ -56,14 +62,25 @@ const progressTotal = ref(0)
 onMounted(() => { loadDates(); document.addEventListener('click', handleClickOutside); document.addEventListener('scroll', handleScroll, true) })
 onBeforeUnmount(() => { document.removeEventListener('click', handleClickOutside); document.removeEventListener('scroll', handleScroll, true) })
 
+function getFilterConfig() {
+  return {
+    filter_enabled: app.filterEnabled,
+    min_playtime_hours: app.minPlaytimeHours,
+    whitelist: app.whitelist,
+    blacklist: app.blacklist,
+  }
+}
+
 function handleScroll() {
-  if (showSingleDatePicker.value) updatePopupPosition(singleInputRef.value)
+  if (showScanDatePicker.value) updatePopupPosition(scanDateInputRef.value)
+  else if (showSingleDatePicker.value) updatePopupPosition(singleInputRef.value)
   else if (showRangePicker.value) updatePopupPosition(rangeInputRef.value)
 }
 
 function handleClickOutside(e: MouseEvent) {
   const target = e.target as HTMLElement
   if (!target.closest('.date-picker-trigger') && !target.closest('.date-picker-popup')) {
+    showScanDatePicker.value = false
     showSingleDatePicker.value = false
     showRangePicker.value = false
   }
@@ -80,12 +97,21 @@ function updatePopupPosition(el: HTMLElement | null) {
 
 function openSinglePicker() {
   showSingleDatePicker.value = true
+  showScanDatePicker.value = false
   showRangePicker.value = false
   nextTick(() => updatePopupPosition(singleInputRef.value))
 }
 
+function openScanDatePicker() {
+  showScanDatePicker.value = true
+  showSingleDatePicker.value = false
+  showRangePicker.value = false
+  nextTick(() => updatePopupPosition(scanDateInputRef.value))
+}
+
 function openRangePicker() {
   showRangePicker.value = !showRangePicker.value
+  showScanDatePicker.value = false
   showSingleDatePicker.value = false
   if (showRangePicker.value) {
     nextTick(() => updatePopupPosition(rangeInputRef.value))
@@ -108,7 +134,8 @@ async function handleScan() {
   scanLoading.value = true; scanResult.value = null; scanError.value = ''
   globalLoading.value = true; globalLoadingText.value = t('dataManage.singleScan'); progressTotal.value = 0
   try {
-    const body: Record<string, string> = { folder: scanFolder.value.trim() }
+    const body: Record<string, any> = { folder: scanFolder.value.trim(), filter_config: getFilterConfig() }
+    if (scanDate.value) body.date = scanDate.value
     scanResult.value = await apiPost('/api/scan', body)
     globalLoading.value = false
     await refreshAllData()
@@ -123,7 +150,7 @@ async function handleBatchScan() {
   progressTotal.value = 0; progressCurrent.value = 0
 
   try {
-    await consumeSSE('/api/batch_scan_stream', { parent_folder: batchFolder.value.trim() }, {
+    await consumeSSE('/api/batch_scan_stream', { parent_folder: batchFolder.value.trim(), filter_config: getFilterConfig() }, {
       onStart: (data) => { progressTotal.value = data.total },
       onProgress: (data) => {
         progressTotal.value = data.total
@@ -214,6 +241,16 @@ function computeRangeDates() {
 function handleSelectSingleDate(date: string) {
   deleteDate.value = date
   showSingleDatePicker.value = false
+}
+
+function handleSelectScanDate(date: string) {
+  scanDate.value = date
+  showScanDatePicker.value = false
+}
+
+function handleScanDateClear() {
+  scanDate.value = ''
+  showScanDatePicker.value = false
 }
 
 function handleSelectRange(start: string, end: string) {
@@ -318,6 +355,21 @@ function selectFolderAndClose() {
                 <FolderOpen class="w-4 h-4" />
               </button>
             </div>
+          </div>
+          <div>
+            <label class="block mb-2 text-sm font-medium text-slate-600 dark:text-slate-400">{{ t('dataManage.scanDate') }}</label>
+            <div class="relative">
+              <input
+                ref="scanDateInputRef"
+                :value="scanDate"
+                readonly
+                class="date-picker-trigger w-full px-4 py-3 bg-white/80 dark:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-xl text-sm dark:text-slate-200 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand/40"
+                :placeholder="t('dataManage.scanDatePlaceholder')"
+                @click.stop="openScanDatePicker"
+              />
+              <Calendar class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            </div>
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('dataManage.scanDateHint') }}</p>
           </div>
           <button
             class="btn-brand inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium transition-all"
@@ -577,6 +629,20 @@ function selectFolderAndClose() {
           </div>
         </div>
       </div>
+    </Teleport>
+
+    <Teleport to="body">
+      <DatePickerPopup
+        :visible="showScanDatePicker"
+        :available-dates="dates"
+        mode="single"
+        color-scheme="brand"
+        :selected-date="scanDate"
+        :popup-style="popupStyle"
+        :free-select="true"
+        @select="handleSelectScanDate"
+        @clear="handleScanDateClear"
+      />
     </Teleport>
 
     <Teleport to="body">

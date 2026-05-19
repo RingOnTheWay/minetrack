@@ -13,7 +13,6 @@ from backend.database.repositories import (
     MapSizeRepository,
     PlayerStatsRepository,
     DetailStatsRepository,
-    SettingsRepository,
 )
 from backend.services.scanner import scan_server_folder, batch_scan_parent_folder
 
@@ -69,8 +68,13 @@ def scan_data():
         return jsonify({'error': '服务器文件夹不存在'}), 400
 
     try:
-        filter_config = SettingsRepository.get_filter_config()
-        result = scan_server_folder(server_folder, filter_config=filter_config)
+        filter_config = data.get('filter_config', {})
+        date = data.get('date') or None
+        if date:
+            import re
+            if not re.match(r'^\d{4}-\d{2}-\d{2}$', date):
+                return jsonify({'error': '日期格式无效，需为 YYYY-MM-DD'}), 400
+        result = scan_server_folder(server_folder, date=date, filter_config=filter_config)
         response = {
             'success': True,
             'date': result['date'],
@@ -288,7 +292,7 @@ def batch_scan():
     if not parent_folder or not os.path.exists(parent_folder):
         return jsonify({'error': '父文件夹不存在'}), 400
 
-    filter_config = SettingsRepository.get_filter_config()
+    filter_config = data.get('filter_config', {})
     result = batch_scan_parent_folder(parent_folder, filter_config=filter_config)
     if 'error' in result:
         return jsonify(result), 500
@@ -357,7 +361,7 @@ def batch_scan_stream():
                 date = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d')
         folders.append({'folder': item_path, 'date': date, 'name': item})
 
-    filter_config = SettingsRepository.get_filter_config()
+    filter_config = data.get('filter_config', {})
 
     def generate():
         total = len(folders)
@@ -433,27 +437,3 @@ def batch_delete_stream():
         'Cache-Control': 'no-cache',
         'X-Accel-Buffering': 'no',
     })
-
-
-@api_bp.route('/api/settings', methods=['GET'])
-def get_settings():
-    return jsonify(SettingsRepository.get_all())
-
-
-@api_bp.route('/api/settings', methods=['POST'])
-def update_settings():
-    data = request.json
-    if not data or not isinstance(data, dict):
-        return jsonify({'error': '无效的设置数据'}), 400
-
-    allowed_keys = {'filter_enabled', 'min_playtime_hours', 'whitelist', 'blacklist', 'max_legend_players'}
-    settings = {}
-    for key, value in data.items():
-        if key in allowed_keys:
-            settings[key] = str(value)
-
-    if not settings:
-        return jsonify({'error': '没有有效的设置项'}), 400
-
-    SettingsRepository.set_many(settings)
-    return jsonify({'success': True, 'settings': SettingsRepository.get_all()})
