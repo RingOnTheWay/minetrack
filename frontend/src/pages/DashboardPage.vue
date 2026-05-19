@@ -108,12 +108,12 @@ const mapGrowth = computed(() => {
 
 <template>
   <div class="space-y-6">
-    <div class="grid grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
       <div
         v-for="(card, index) in statCards"
         :key="index"
         v-motion-slide-bottom :delay="index * 100"
-        class="group relative bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-8 border border-white/80 dark:border-slate-700/80 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:scale-[1.02] transition-all duration-300 overflow-hidden"
+        class="group relative bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-5 md:p-8 border border-white/80 dark:border-slate-700/80 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:scale-[1.02] transition-all duration-300 overflow-hidden"
       >
         <div :class="`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300`" />
 
@@ -126,7 +126,7 @@ const mapGrowth = computed(() => {
             <component :is="card.icon" class="w-6 h-6 text-brand dark:text-brand-light" />
           </div>
 
-          <div class="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-brand to-brand-light">
+          <div class="text-3xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-brand to-brand-light">
             {{ typeof card.value === 'number' ? card.displayValue : card.value }}
           </div>
 
@@ -135,13 +135,13 @@ const mapGrowth = computed(() => {
       </div>
     </div>
 
-    <div class="grid grid-cols-5 gap-6">
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-6">
       <button
         v-for="(item, index) in navItems"
         :key="item.path"
         v-motion-slide-bottom :delay="300 + index * 100"
         :class="[item.hoverShadow]"
-        class="relative bg-white dark:bg-slate-800 rounded-2xl p-8 border border-white/80 dark:border-slate-700/80 shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 group overflow-hidden"
+        class="relative bg-white dark:bg-slate-800 rounded-2xl p-4 md:p-8 border border-white/80 dark:border-slate-700/80 shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 group overflow-hidden"
         @click="goPage(item.path)"
       >
         <div :class="`absolute inset-0 bg-gradient-to-br ${item.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`" />
@@ -149,8 +149,8 @@ const mapGrowth = computed(() => {
         <div class="absolute -top-8 -right-8 w-24 h-24 bg-gradient-to-br from-brand/5 dark:from-brand/3 to-transparent rounded-full group-hover:scale-150 transition-transform duration-500" />
 
         <div class="relative flex flex-col items-center gap-4">
-          <div :class="`w-16 h-16 bg-gradient-to-br ${item.color} opacity-60 rounded-xl flex items-center justify-center group-hover:opacity-100 group-hover:rotate-3 transition-all duration-300`">
-            <component :is="item.icon" class="w-8 h-8 text-white" />
+          <div :class="`w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br ${item.color} opacity-60 rounded-xl flex items-center justify-center group-hover:opacity-100 group-hover:rotate-3 transition-all duration-300`">
+            <component :is="item.icon" class="w-6 h-6 md:w-8 md:h-8 text-white" />
           </div>
           <span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-brand dark:group-hover:text-brand-light transition-colors">
             {{ item.label }}
@@ -161,7 +161,7 @@ const mapGrowth = computed(() => {
 
     <div
       v-motion-slide-bottom :delay="600"
-      class="relative bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-8 border border-white/80 dark:border-slate-700/80 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group"
+      class="relative bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-5 md:p-8 border border-white/80 dark:border-slate-700/80 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group"
     >
       <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-brand/5 dark:from-brand/3 to-transparent rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
@@ -186,7 +186,7 @@ const mapGrowth = computed(() => {
           </button>
         </div>
 
-        <div class="flex items-center gap-4 mb-6">
+        <div class="flex flex-wrap items-center gap-2 md:gap-4 mb-6">
           <div class="flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
             <div class="w-2.5 h-2.5 bg-[#60d5f2] rounded-full animate-pulse" />
             <span class="text-sm text-slate-700 dark:text-slate-300">{{ t('map.world') }}: {{ latestMapData.world }}</span>

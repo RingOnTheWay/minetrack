@@ -323,7 +323,7 @@ function selectFolderAndClose() {
 
 <template>
   <div class="space-y-6">
-    <div class="flex gap-2">
+    <div class="flex flex-wrap gap-2">
       <button
         v-for="tab in (['import', 'delete'] as const)"
         :key="tab"
@@ -338,8 +338,8 @@ function selectFolderAndClose() {
     </div>
 
     <div v-if="activeTab === 'import'" class="space-y-6">
-      <div class="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-8 border border-white/80 dark:border-slate-700/80 shadow-sm hover:shadow-lg transition-all duration-300 group">
-        <div class="flex items-center gap-4 mb-6">
+      <div class="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-5 md:p-8 border border-white/80 dark:border-slate-700/80 shadow-sm hover:shadow-lg transition-all duration-300 group">
+        <div class="flex flex-wrap items-center gap-2 md:gap-4 mb-6">
           <div class="w-12 h-12 bg-gradient-to-br from-brand/20 dark:from-brand/20 to-brand/10 dark:to-brand/15 rounded-xl flex items-center justify-center">
             <Upload class="w-6 h-6 text-brand dark:text-brand-light" />
           </div>
@@ -396,8 +396,8 @@ function selectFolderAndClose() {
         </div>
       </div>
 
-      <div class="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-8 border border-white/80 dark:border-slate-700/80 shadow-sm hover:shadow-lg transition-all duration-300 group">
-        <div class="flex items-center gap-4 mb-6">
+      <div class="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-5 md:p-8 border border-white/80 dark:border-slate-700/80 shadow-sm hover:shadow-lg transition-all duration-300 group">
+        <div class="flex flex-wrap items-center gap-2 md:gap-4 mb-6">
           <div class="w-12 h-12 bg-gradient-to-br from-brand/20 dark:from-brand/20 to-brand/10 dark:to-brand/15 rounded-xl flex items-center justify-center">
             <Database class="w-6 h-6 text-brand dark:text-brand-light" />
           </div>
@@ -437,8 +437,8 @@ function selectFolderAndClose() {
     </div>
 
     <div v-if="activeTab === 'delete'" class="space-y-6">
-      <div class="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-8 border border-white/80 dark:border-slate-700/80 shadow-sm hover:shadow-lg transition-all duration-300 group">
-        <div class="flex items-center gap-4 mb-6">
+      <div class="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-5 md:p-8 border border-white/80 dark:border-slate-700/80 shadow-sm hover:shadow-lg transition-all duration-300 group">
+        <div class="flex flex-wrap items-center gap-2 md:gap-4 mb-6">
           <div class="w-12 h-12 accent-icon-bg rounded-xl flex items-center justify-center">
             <Trash2 class="w-6 h-6 accent-icon-color" />
           </div>
@@ -482,8 +482,8 @@ function selectFolderAndClose() {
         </div>
       </div>
 
-      <div class="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-8 border border-white/80 dark:border-slate-700/80 shadow-sm hover:shadow-lg transition-all duration-300 group">
-        <div class="flex items-center gap-4 mb-6">
+      <div class="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-5 md:p-8 border border-white/80 dark:border-slate-700/80 shadow-sm hover:shadow-lg transition-all duration-300 group">
+        <div class="flex flex-wrap items-center gap-2 md:gap-4 mb-6">
           <div class="w-12 h-12 accent-icon-bg rounded-xl flex items-center justify-center">
             <Trash2 class="w-6 h-6 accent-icon-color" />
           </div>
@@ -536,8 +536,8 @@ function selectFolderAndClose() {
         </div>
       </div>
 
-      <div class="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-8 border border-white/80 dark:border-slate-700/80 shadow-sm hover:shadow-lg transition-all duration-300 group">
-        <div class="flex items-center gap-4 mb-6">
+      <div class="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-5 md:p-8 border border-white/80 dark:border-slate-700/80 shadow-sm hover:shadow-lg transition-all duration-300 group">
+        <div class="flex flex-wrap items-center gap-2 md:gap-4 mb-6">
           <div class="w-12 h-12 accent-icon-bg rounded-xl flex items-center justify-center">
             <Trash2 class="w-6 h-6 accent-icon-color" />
           </div>

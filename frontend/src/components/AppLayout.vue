@@ -2,9 +2,23 @@
 import Sidebar from './Sidebar.vue'
 import TopBar from './TopBar.vue'
 import { useDataStore } from '@/stores/data'
+import { ref, provide } from 'vue'
 import { onMounted } from 'vue'
 
 const data = useDataStore()
+const sidebarOpen = ref(false)
+
+function toggleSidebar() {
+  sidebarOpen.value = !sidebarOpen.value
+}
+
+function closeSidebar() {
+  sidebarOpen.value = false
+}
+
+provide('sidebarOpen', sidebarOpen)
+provide('toggleSidebar', toggleSidebar)
+provide('closeSidebar', closeSidebar)
 
 onMounted(() => {
   data.loadAll()
@@ -13,10 +27,10 @@ onMounted(() => {
 
 <template>
   <div class="flex h-screen overflow-hidden app-layout-outer">
-    <Sidebar />
-    <div class="flex-1 flex flex-col overflow-hidden app-layout-inner">
+    <Sidebar :open="sidebarOpen" @close="closeSidebar" />
+    <div class="flex-1 flex flex-col overflow-hidden app-layout-inner min-w-0">
       <TopBar />
-      <div class="flex-1 overflow-y-auto p-8 space-y-6">
+      <div class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
         <slot />
       </div>
     </div>

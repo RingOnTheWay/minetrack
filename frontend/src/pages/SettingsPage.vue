@@ -181,7 +181,7 @@ function onBlacklistKeydown(e: KeyboardEvent) {
   <div class="space-y-6 max-w-3xl">
     <div
       v-motion-slide-bottom
-      class="relative bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-8 border border-white/80 dark:border-slate-700/80 shadow-sm overflow-hidden"
+      class="relative bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-5 md:p-8 border border-white/80 dark:border-slate-700/80 shadow-sm overflow-hidden"
     >
       <div class="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-brand/5 dark:from-brand/3 to-transparent rounded-full blur-3xl" />
 
@@ -229,7 +229,7 @@ function onBlacklistKeydown(e: KeyboardEvent) {
 
     <div
       v-motion-slide-bottom :delay="50"
-      class="relative bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-8 border border-white/80 dark:border-slate-700/80 shadow-sm overflow-hidden"
+      class="relative bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-5 md:p-8 border border-white/80 dark:border-slate-700/80 shadow-sm overflow-hidden"
     >
       <div class="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-brand/5 dark:from-brand/3 to-transparent rounded-full blur-3xl" />
 
@@ -296,7 +296,7 @@ function onBlacklistKeydown(e: KeyboardEvent) {
 
     <div
       v-motion-slide-bottom :delay="75"
-      class="relative bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-8 border border-white/80 dark:border-slate-700/80 shadow-sm overflow-hidden"
+      class="relative bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-5 md:p-8 border border-white/80 dark:border-slate-700/80 shadow-sm overflow-hidden"
     >
       <div class="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-brand/5 dark:from-brand/3 to-transparent rounded-full blur-3xl" />
 
@@ -328,7 +328,7 @@ function onBlacklistKeydown(e: KeyboardEvent) {
 
     <div
       v-motion-slide-bottom :delay="81"
-      class="relative bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-8 border border-white/80 dark:border-slate-700/80 shadow-sm overflow-hidden"
+      class="relative bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-5 md:p-8 border border-white/80 dark:border-slate-700/80 shadow-sm overflow-hidden"
     >
       <div class="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-brand/5 dark:from-brand/3 to-transparent rounded-full blur-3xl" />
 
@@ -358,7 +358,7 @@ function onBlacklistKeydown(e: KeyboardEvent) {
 
     <div
       v-motion-slide-bottom :delay="87"
-      class="relative bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-8 border border-white/80 dark:border-slate-700/80 shadow-sm"
+      class="relative bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-5 md:p-8 border border-white/80 dark:border-slate-700/80 shadow-sm"
       :class="defaultSelectedDropdownOpen ? 'z-50' : ''"
     >
       <div class="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
@@ -466,7 +466,7 @@ function onBlacklistKeydown(e: KeyboardEvent) {
 
     <div
       v-motion-slide-bottom :delay="93"
-      class="relative bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-8 border border-white/80 dark:border-slate-700/80 shadow-sm overflow-hidden"
+      class="relative bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-5 md:p-8 border border-white/80 dark:border-slate-700/80 shadow-sm overflow-hidden"
     >
       <div class="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-brand/5 dark:from-brand/3 to-transparent rounded-full blur-3xl" />
 
@@ -597,7 +597,7 @@ function onBlacklistKeydown(e: KeyboardEvent) {
 
     <div
       v-motion-slide-bottom :delay="100"
-      class="relative bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-8 border border-white/80 dark:border-slate-700/80 shadow-sm overflow-hidden"
+      class="relative bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-5 md:p-8 border border-white/80 dark:border-slate-700/80 shadow-sm overflow-hidden"
     >
       <div class="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-brand/5 dark:from-brand/3 to-transparent rounded-full blur-3xl" />
 

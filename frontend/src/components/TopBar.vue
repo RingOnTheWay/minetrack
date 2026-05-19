@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router'
-import { computed } from 'vue'
+import { computed, inject, type Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Settings } from 'lucide-vue-next'
+import { Settings, Menu } from 'lucide-vue-next'
 
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
+
+const toggleSidebar = inject<() => void>('toggleSidebar', () => {})
 
 const isSettingsPage = computed(() => route.path === '/settings')
 
@@ -47,10 +49,18 @@ function goToSettings() {
 
 <template>
   <div class="bg-white/60 dark:bg-slate-900/80 backdrop-blur-xl border-b border-brand/10 dark:border-brand/20 shadow-sm">
-    <div class="px-8 py-5 flex items-center justify-between">
-      <div>
-        <h1 class="text-xl font-semibold text-slate-800 dark:text-slate-100">{{ currentLabel }}</h1>
-        <p v-if="currentSubtitle" class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{{ currentSubtitle }}</p>
+    <div class="px-4 md:px-8 py-4 md:py-5 flex items-center justify-between">
+      <div class="flex items-center gap-3 min-w-0">
+        <button
+          class="md:hidden p-2 -ml-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+          @click="toggleSidebar"
+        >
+          <Menu class="w-5 h-5" />
+        </button>
+        <div class="min-w-0">
+          <h1 class="text-lg md:text-xl font-semibold text-slate-800 dark:text-slate-100 truncate">{{ currentLabel }}</h1>
+          <p v-if="currentSubtitle" class="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-0.5 truncate">{{ currentSubtitle }}</p>
+        </div>
       </div>
 
       <div class="flex items-center gap-3">

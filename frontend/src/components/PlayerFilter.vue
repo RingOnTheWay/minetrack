@@ -93,12 +93,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="dropdownRef" class="flex items-center gap-3" @click="open && (open = false, searchQuery = '')">
+  <div ref="dropdownRef" class="flex flex-wrap items-center gap-3" @click="open && (open = false, searchQuery = '')">
     <div class="flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-400 whitespace-nowrap">
       <Users class="w-4 h-4 text-brand dark:text-brand-light" />
       <span>{{ t('common.filterPlayers') }}</span>
     </div>
-    <div class="relative flex-1 max-w-[600px]">
+    <div class="relative flex-1 min-w-[200px] max-w-[600px]">
       <div
         class="flex items-center justify-between px-3 py-2 rounded-xl border bg-white/80 dark:bg-slate-800/80 cursor-pointer transition-all min-h-[44px] gap-2"
         :class="open ? 'border-brand/40 ring-2 ring-brand/20' : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'"

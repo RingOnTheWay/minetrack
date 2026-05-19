@@ -98,12 +98,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="flex items-center gap-3" @click="showPicker && (showPicker = false)">
+  <div class="flex flex-wrap items-center gap-3" @click="showPicker && (showPicker = false)">
     <div class="flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-400 whitespace-nowrap">
       <Calendar class="w-4 h-4 text-brand dark:text-brand-light" />
       <span>{{ t('dateRange.timeFilter') }}</span>
     </div>
-    <div class="relative flex-1 max-w-[600px]">
+    <div class="relative flex-1 min-w-[200px] max-w-[600px]">
       <div
         ref="inputRef"
         class="date-range-trigger flex items-center justify-between px-3 py-2 rounded-xl border bg-white/80 dark:bg-slate-800/80 cursor-pointer transition-all min-h-[44px] gap-2"
