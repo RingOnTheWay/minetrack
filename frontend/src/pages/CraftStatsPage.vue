@@ -146,7 +146,13 @@ const rankColors = ['#FFD700', '#C0C0C0', '#CD7F32']
           <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">{{ t('common.topN', { n: 10 }) }}</h3>
         </div>
 
-        <div class="overflow-hidden rounded-xl border border-slate-100 dark:border-slate-700">
+        <div v-if="topItems.length === 0" class="flex flex-col items-center justify-center py-16 gap-3">
+          <div class="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-700/50 flex items-center justify-center">
+            <Trophy class="w-8 h-8 text-slate-300 dark:text-slate-600" />
+          </div>
+          <span class="text-sm text-slate-400 dark:text-slate-500">{{ t('common.noData') }}</span>
+        </div>
+        <div v-else class="overflow-hidden rounded-xl border border-slate-100 dark:border-slate-700">
           <table class="w-full">
             <thead>
               <tr class="bg-slate-50/80 dark:bg-slate-800/80">

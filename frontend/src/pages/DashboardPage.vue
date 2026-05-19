@@ -160,7 +160,6 @@ const mapGrowth = computed(() => {
     </div>
 
     <div
-      v-if="mapChartSeries.length > 0 && mapChartSeries[0].data.length > 0"
       v-motion-slide-bottom :delay="600"
       class="relative bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-8 border border-white/80 dark:border-slate-700/80 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group"
     >

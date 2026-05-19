@@ -50,6 +50,8 @@ const rangeInputRef = ref<HTMLElement | null>(null)
 
 const globalLoading = ref(false)
 const globalLoadingText = ref('')
+const progressCurrent = ref(0)
+const progressTotal = ref(0)
 
 onMounted(() => { loadDates(); document.addEventListener('click', handleClickOutside); document.addEventListener('scroll', handleScroll, true) })
 onBeforeUnmount(() => { document.removeEventListener('click', handleClickOutside); document.removeEventListener('scroll', handleScroll, true) })
@@ -104,10 +106,11 @@ async function refreshAllData() {
 async function handleScan() {
   if (!scanFolder.value.trim()) return
   scanLoading.value = true; scanResult.value = null; scanError.value = ''
-  globalLoading.value = true; globalLoadingText.value = t('dataManage.singleScan')
+  globalLoading.value = true; globalLoadingText.value = t('dataManage.singleScan'); progressTotal.value = 0
   try {
     const body: Record<string, string> = { folder: scanFolder.value.trim() }
     scanResult.value = await apiPost('/api/scan', body)
+    globalLoading.value = false
     await refreshAllData()
   } catch (e: any) { scanError.value = e.message || t('dataManage.operationFailed') }
   finally { scanLoading.value = false; globalLoading.value = false }
@@ -117,19 +120,49 @@ async function handleBatchScan() {
   if (!batchFolder.value.trim()) return
   batchLoading.value = true; batchResult.value = null; batchError.value = ''
   globalLoading.value = true; globalLoadingText.value = t('dataManage.batchScan')
+
   try {
-    batchResult.value = await apiPost('/api/batch_scan', { parent_folder: batchFolder.value.trim() })
+    const listRes = await apiPost<{ folders: { folder: string; date: string }[]; total: number }>('/api/list_scannable', { parent_folder: batchFolder.value.trim() })
+    const folders: { folder: string; date: string }[] = listRes.folders
+    if (folders.length === 0) {
+      batchResult.value = { imported: 0, total: 0, filtered_count: 0 }
+      globalLoading.value = false
+      batchLoading.value = false
+      return
+    }
+
+    progressTotal.value = folders.length
+    progressCurrent.value = 0
+    let imported = 0, filteredCount = 0
+
+    for (const item of folders) {
+      progressCurrent.value++
+      globalLoadingText.value = `${t('dataManage.batchScan')} (${progressCurrent.value}/${progressTotal.value})`
+      await nextTick()
+      try {
+        const res = await apiPost<{ filtered_count?: number }>('/api/scan', { folder: item.folder })
+        if (res.filtered_count) filteredCount += res.filtered_count
+        imported++
+      } catch { /* skip failed */ }
+    }
+
+    batchResult.value = { imported, total: folders.length, filtered_count: filteredCount }
+    globalLoading.value = false
     await refreshAllData()
-  } catch (e: any) { batchError.value = e.message || t('dataManage.operationFailed') }
-  finally { batchLoading.value = false; globalLoading.value = false }
+  } catch (e: any) {
+    batchError.value = e.message || t('dataManage.operationFailed')
+  } finally {
+    batchLoading.value = false; globalLoading.value = false
+  }
 }
 
 async function handleDeleteSingle() {
   if (!deleteDate.value) return
   deleteSingleLoading.value = true; deleteSingleResult.value = null; deleteSingleError.value = ''
-  globalLoading.value = true; globalLoadingText.value = t('dataManage.deleteByDate')
+  globalLoading.value = true; globalLoadingText.value = t('dataManage.deleteByDate'); progressTotal.value = 0
   try {
     deleteSingleResult.value = await apiDelete('/api/delete_date', { date: deleteDate.value })
+    globalLoading.value = false
     await refreshAllData()
   } catch (e: any) { deleteSingleError.value = e.message || t('dataManage.operationFailed') }
   finally { deleteSingleLoading.value = false; globalLoading.value = false }
@@ -138,24 +171,70 @@ async function handleDeleteSingle() {
 async function handleBatchDelete() {
   if (rangeMatchedDates.value.length === 0) return
   deleteLoading.value = true; deleteResult.value = null; deleteError.value = ''
+  const datesToDelete = [...rangeMatchedDates.value]
+  progressTotal.value = datesToDelete.length
+  progressCurrent.value = 0
   globalLoading.value = true; globalLoadingText.value = t('dataManage.batchDelete')
-  try {
-    deleteResult.value = await apiDelete('/api/batch_delete', { dates: rangeMatchedDates.value })
-    rangeStart.value = ''; rangeEnd.value = ''; rangeMatchedDates.value = []
-    await refreshAllData()
-  } catch (e: any) { deleteError.value = e.message || t('dataManage.operationFailed') }
-  finally { deleteLoading.value = false; globalLoading.value = false }
+
+  let totalMap = 0, totalPlayer = 0, totalDetail = 0, successCount = 0
+
+  for (const date of datesToDelete) {
+    progressCurrent.value++
+    globalLoadingText.value = `${t('dataManage.batchDelete')} (${progressCurrent.value}/${progressTotal.value})`
+    await nextTick()
+    try {
+      const res = await apiDelete<{ map_records_deleted: number; player_records_deleted: number; detail_records_deleted: number }>('/api/delete_date', { date })
+      totalMap += res.map_records_deleted || 0
+      totalPlayer += res.player_records_deleted || 0
+      totalDetail += res.detail_records_deleted || 0
+      successCount++
+    } catch { /* skip failed */ }
+  }
+
+  deleteResult.value = {
+    total_dates: successCount,
+    total_map_deleted: totalMap,
+    total_player_deleted: totalPlayer,
+    total_detail_deleted: totalDetail,
+  }
+  rangeStart.value = ''; rangeEnd.value = ''; rangeMatchedDates.value = []
+  globalLoading.value = false
+  await refreshAllData()
+  deleteLoading.value = false
 }
 
 async function handleDeleteAll() {
   showDeleteAllConfirm.value = false
   deleteAllLoading.value = true; deleteAllResult.value = null; deleteAllError.value = ''
+  const allDates = [...dates.value]
+  progressTotal.value = allDates.length
+  progressCurrent.value = 0
   globalLoading.value = true; globalLoadingText.value = t('dataManage.deleteAll')
-  try {
-    deleteAllResult.value = await apiDelete('/api/delete_all', {})
-    await refreshAllData()
-  } catch (e: any) { deleteAllError.value = e.message || t('dataManage.operationFailed') }
-  finally { deleteAllLoading.value = false; globalLoading.value = false }
+
+  let totalMap = 0, totalPlayer = 0, totalDetail = 0, successCount = 0
+
+  for (const date of allDates) {
+    progressCurrent.value++
+    globalLoadingText.value = `${t('dataManage.deleteAll')} (${progressCurrent.value}/${progressTotal.value})`
+    await nextTick()
+    try {
+      const res = await apiDelete<{ map_records_deleted: number; player_records_deleted: number; detail_records_deleted: number }>('/api/delete_date', { date })
+      totalMap += res.map_records_deleted || 0
+      totalPlayer += res.player_records_deleted || 0
+      totalDetail += res.detail_records_deleted || 0
+      successCount++
+    } catch { /* skip failed */ }
+  }
+
+  deleteAllResult.value = {
+    total_dates: successCount,
+    total_map_deleted: totalMap,
+    total_player_deleted: totalPlayer,
+    total_detail_deleted: totalDetail,
+  }
+  globalLoading.value = false
+  await refreshAllData()
+  deleteAllLoading.value = false
 }
 
 function computeRangeDates() {
@@ -493,7 +572,7 @@ function selectFolderAndClose() {
           <div v-if="folderBrowserLoading" class="py-12 text-center">
             <Loader2 class="w-6 h-6 animate-spin text-brand mx-auto" />
           </div>
-          <div v-else class="max-h-72 overflow-y-auto space-y-0.5">
+          <div v-else class="max-h-72 overflow-y-auto overflow-x-hidden hide-scrollbar space-y-0.5">
             <button
               v-if="folderBrowserParent !== '' || folderBrowserIsRoot"
               class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-all"
@@ -563,7 +642,13 @@ function selectFolderAndClose() {
         <div class="global-loading-card dark:bg-slate-800">
           <Loader2 class="w-12 h-12 animate-spin text-brand" />
           <div class="mt-6 text-base font-semibold text-slate-700 dark:text-slate-200">{{ globalLoadingText }}</div>
-          <div class="mt-2 text-sm text-slate-400 dark:text-slate-500">{{ t('common.loading') }}</div>
+          <div v-if="progressTotal > 0" class="mt-4 w-64">
+            <div class="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div class="h-full bg-brand rounded-full transition-all duration-300 ease-out" :style="{ width: `${progressTotal > 0 ? (progressCurrent / progressTotal) * 100 : 0}%` }" />
+            </div>
+            <div class="mt-2 text-xs text-slate-400 dark:text-slate-500 text-center">{{ progressCurrent }} / {{ progressTotal }}</div>
+          </div>
+          <div v-else class="mt-2 text-sm text-slate-400 dark:text-slate-500">{{ t('common.loading') }}</div>
         </div>
       </div>
     </Teleport>

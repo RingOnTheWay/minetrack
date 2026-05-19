@@ -295,6 +295,38 @@ def batch_scan():
     return jsonify(result)
 
 
+@api_bp.route('/api/list_scannable', methods=['POST'])
+def list_scannable():
+    data = request.json
+    parent_folder = data.get('parent_folder')
+
+    if not parent_folder or not os.path.exists(parent_folder):
+        return jsonify({'error': '父文件夹不存在'}), 400
+
+    from backend.services.scanner import parse_date_from_server_properties, parse_date_from_folder_name
+    from datetime import datetime
+
+    folders = []
+    for item in sorted(os.listdir(parent_folder)):
+        item_path = os.path.join(parent_folder, item)
+        if not os.path.isdir(item_path):
+            continue
+        world_path = os.path.join(item_path, 'world')
+        if not os.path.exists(world_path):
+            continue
+        try:
+            date = parse_date_from_server_properties(item_path)
+        except ValueError:
+            try:
+                date = parse_date_from_folder_name(item)
+            except ValueError:
+                mtime = os.path.getmtime(item_path)
+                date = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d')
+        folders.append({'folder': item_path, 'date': date})
+
+    return jsonify({'folders': folders, 'total': len(folders)})
+
+
 @api_bp.route('/api/settings', methods=['GET'])
 def get_settings():
     return jsonify(SettingsRepository.get_all())

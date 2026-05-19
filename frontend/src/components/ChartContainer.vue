@@ -9,6 +9,8 @@ import {
   DataZoomComponent
 } from 'echarts/components'
 import { useAppStore } from '@/stores/app'
+import { useI18n } from 'vue-i18n'
+import { BarChart3 } from 'lucide-vue-next'
 
 use([CanvasRenderer, LineChart, BarChart, GridComponent, TooltipComponent, LegendComponent, DataZoomComponent])
 
@@ -33,6 +35,12 @@ const props = withDefaults(defineProps<{
 })
 
 const app = useAppStore()
+const { t } = useI18n()
+
+const isEmpty = computed(() => {
+  if (props.series.length === 0) return true
+  return props.series.every(s => !s.data || s.data.length === 0)
+})
 
 const option = computed(() => {
   const isArea = props.chartType === 'line'
@@ -150,5 +158,11 @@ const option = computed(() => {
 </script>
 
 <template>
-  <VChart :option="option" :style="{ height, width: '100%' }" autoresize />
+  <div v-if="isEmpty" :style="{ height, width: '100%' }" class="flex flex-col items-center justify-center gap-3">
+    <div class="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-700/50 flex items-center justify-center">
+      <BarChart3 class="w-8 h-8 text-slate-300 dark:text-slate-600" />
+    </div>
+    <span class="text-sm text-slate-400 dark:text-slate-500">{{ t('common.noData') }}</span>
+  </div>
+  <VChart v-else :option="option" :style="{ height, width: '100%' }" autoresize />
 </template>
