@@ -84,14 +84,14 @@ function toggleLocale() {
             class="px-2 py-0.5 text-xs font-semibold rounded-full"
             :class="item.badge === 'New'
               ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white'
-              : 'bg-brand/20 text-brand dark:bg-brand/30 dark:text-brand-light'"
+              : 'nav-badge'"
           >
             {{ item.badge }}
           </span>
 
           <div
             v-if="!isSettingsPage && currentPath === item.path"
-            class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-brand to-brand-light rounded-r-full"
+            class="nav-indicator absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-r-full"
           />
         </button>
       </TransitionGroup>
@@ -122,6 +122,20 @@ function toggleLocale() {
 </template>
 
 <style scoped>
+.nav-indicator {
+  background: linear-gradient(to bottom, var(--brand), var(--brand-light));
+}
+
+.nav-badge {
+  background-color: color-mix(in srgb, var(--brand) 20%, transparent);
+  color: var(--brand);
+}
+
+:global(.dark) .nav-badge {
+  background-color: color-mix(in srgb, var(--brand) 30%, transparent);
+  color: var(--brand-light);
+}
+
 .nav-item-enter-active {
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }

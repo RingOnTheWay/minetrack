@@ -5,7 +5,7 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-@theme inline {
+@theme {
   --color-brand: #779977;
   --color-brand-light: #99bb99;
   --color-brand-dark: #556655;
@@ -19,7 +19,7 @@
 
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: #f5f9f5;
+  background: color-mix(in srgb, var(--brand) 8%, #fafcf9);
   color: #1e293b;
   min-height: 100vh;
   line-height: 1.5;
@@ -27,8 +27,24 @@ body {
 }
 
 .dark body {
-  background: #0f1a0f;
+  background: color-mix(in srgb, var(--brand-dark) 6%, #0f1a0f);
   color: #e2e8f0;
+}
+
+.app-layout-outer {
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 40%, color-mix(in srgb, var(--brand) 8%, #ffffff) 100%);
+}
+
+.dark .app-layout-outer {
+  background: linear-gradient(135deg, #020617 0%, color-mix(in srgb, var(--brand-dark) 6%, #0a0f0a) 50%, color-mix(in srgb, var(--brand-dark) 3%, #0c1210) 100%);
+}
+
+.app-layout-inner {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--brand) 12%, #f5f7f5) 0%, color-mix(in srgb, var(--brand) 4%, #fafcf9) 50%, color-mix(in srgb, var(--brand) 10%, #f2f5f2) 100%);
+}
+
+.dark .app-layout-inner {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--brand-dark) 6%, #0a140a) 0%, color-mix(in srgb, var(--brand-dark) 4%, #0f1a0f) 50%, color-mix(in srgb, var(--brand-dark) 6%, #0a140a) 100%);
 }
 
 #app {

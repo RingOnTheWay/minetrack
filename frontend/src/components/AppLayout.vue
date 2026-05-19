@@ -12,9 +12,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="flex h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-white to-emerald-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950/20">
+  <div class="flex h-screen overflow-hidden app-layout-outer">
     <Sidebar />
-    <div class="flex-1 flex flex-col overflow-hidden bg-gradient-to-br from-[#e8f0e8] via-[#f5f9f5] to-[#e8f0e8] dark:from-[#0a140a] dark:via-[#0f1a0f] dark:to-[#0a140a]">
+    <div class="flex-1 flex flex-col overflow-hidden app-layout-inner">
       <TopBar />
       <div class="flex-1 overflow-y-auto p-8 space-y-6">
         <slot />
@@ -26,7 +26,7 @@ onMounted(() => {
         <div class="global-loading-card">
           <div class="text-sm text-slate-500 dark:text-slate-400 mb-4">少女祈祷中...</div>
           <div class="w-48 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-            <div class="h-full bg-gradient-to-r from-brand to-brand-light rounded-full loading-progress" />
+            <div class="h-full rounded-full loading-progress" />
           </div>
         </div>
       </div>
@@ -35,6 +35,11 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.loading-progress {
+  background: linear-gradient(to right, var(--brand), var(--brand-light));
+  animation: loading-slide 1.5s ease-in-out infinite;
+}
+
 .loading-fade-enter-active {
   transition: opacity 0.3s ease;
 }
@@ -44,10 +49,6 @@ onMounted(() => {
 .loading-fade-enter-from,
 .loading-fade-leave-to {
   opacity: 0;
-}
-
-.loading-progress {
-  animation: loading-slide 1.5s ease-in-out infinite;
 }
 
 @keyframes loading-slide {

@@ -88,6 +88,25 @@ const option = computed(() => {
     return base
   })
 
+  const allValues = limitedSeries.flatMap(s => s.data).filter((v): v is number => v != null && !isNaN(v))
+  const yMax = allValues.length > 0 ? Math.max(...allValues) : 0
+
+  if (seriesList.length > 0) {
+    const mirrorData = new Array(props.labels.length).fill(0)
+    mirrorData[0] = yMax
+    seriesList.push({
+      type: props.chartType,
+      yAxisIndex: 1,
+      data: mirrorData,
+      showSymbol: false,
+      lineStyle: { width: 0, opacity: 0 },
+      itemStyle: { opacity: 0 },
+      areaStyle: { opacity: 0 },
+      silent: true,
+      tooltip: { show: false },
+    } as any)
+  }
+
   return {
     tooltip: {
       trigger: 'axis',
@@ -119,6 +138,7 @@ const option = computed(() => {
       },
     },
     legend: {
+      data: limitedSeries.map(s => s.name),
       bottom: 0,
       icon: 'circle',
       itemWidth: 8,
@@ -128,7 +148,7 @@ const option = computed(() => {
     },
     grid: {
       left: 10,
-      right: 20,
+      right: 10,
       top: 10,
       bottom: 40,
       containLabel: true,
@@ -141,15 +161,26 @@ const option = computed(() => {
       axisTick: { show: false },
       axisLabel: { color: dark ? '#64748b' : '#94a3b8', fontSize: 12 },
     },
-    yAxis: {
-      type: 'value',
-      name: props.yAxisLabel || '',
-      nameTextStyle: { color: dark ? '#64748b' : '#94a3b8', fontSize: 12, padding: [0, 0, 0, -20] },
-      axisLine: { show: false },
-      axisTick: { show: false },
-      axisLabel: { color: dark ? '#64748b' : '#94a3b8', fontSize: 12 },
-      splitLine: { lineStyle: { color: dark ? '#1e3a1e' : '#d1ddd1', type: 'dashed' } },
-    },
+    yAxis: [
+      {
+        type: 'value',
+        name: props.yAxisLabel || '',
+        nameTextStyle: { color: dark ? '#64748b' : '#94a3b8', fontSize: 12, padding: [0, 0, 0, -20] },
+        axisLine: { show: false },
+        axisTick: { show: false },
+        axisLabel: { color: dark ? '#64748b' : '#94a3b8', fontSize: 12 },
+        splitLine: { lineStyle: { color: dark ? '#1e3a1e' : '#d1ddd1', type: 'dashed' } },
+      },
+      {
+        type: 'value',
+        position: 'right',
+        alignTicks: true,
+        axisLine: { show: false },
+        axisTick: { show: false },
+        axisLabel: { color: dark ? '#64748b' : '#94a3b8', fontSize: 12 },
+        splitLine: { show: false },
+      },
+    ],
     series: seriesList,
     animationDuration: 800,
     animationEasing: 'cubicOut' as const,
