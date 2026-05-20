@@ -1,5 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
+import { useAppStore } from '@/stores/app'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -59,4 +60,27 @@ const router = createRouter({
   routes,
 })
 
+router.beforeEach((to) => {
+  const app = useAppStore()
+  if (to.path !== router.currentRoute.value.path) {
+    app.setRouteLoading(true, to.path)
+  }
+})
+
+router.afterEach(() => {
+  const app = useAppStore()
+  app.setRouteLoading(false)
+})
+
+function prefetchRoutes() {
+  requestIdleCallback(() => {
+    routes.forEach((route) => {
+      if (typeof route.component === 'function') {
+        ;(route.component as () => Promise<unknown>)().catch(() => {})
+      }
+    })
+  })
+}
+
+export { prefetchRoutes }
 export default router

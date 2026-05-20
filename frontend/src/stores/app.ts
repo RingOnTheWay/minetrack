@@ -38,6 +38,21 @@ export type NavKey = '/' | '/map' | '/players' | '/battle' | '/craft' | '/items'
 
 const ALL_NAV_KEYS: NavKey[] = ['/', '/map', '/players', '/battle', '/craft', '/items', '/blocks', '/activity', '/data-manage']
 
+const ROUTE_LOADING_MESSAGES: Record<string, string> = {
+  '/': '少女布置仪表盘中...',
+  '/map': '少女丈量世界版图中...',
+  '/players': '少女翻阅玩家名册中...',
+  '/battle': '少女磨砺兵刃中...',
+  '/craft': '少女点燃熔炉中...',
+  '/items': '少女清点背包中...',
+  '/blocks': '少女挥舞镐头中...',
+  '/activity': '少女追踪足迹中...',
+  '/data-manage': '少女整理档案中...',
+  '/settings': '少女调整旋钮中...',
+}
+
+const DEFAULT_ROUTE_LOADING_MESSAGE = '少女祈祷中...'
+
 const DEFAULT_NAV_VISIBILITY: Record<NavKey, boolean> = {
   '/': true,
   '/map': true,
@@ -71,6 +86,8 @@ export const useAppStore = defineStore('app', () => {
   const mode = ref<'local' | 'static'>('local')
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const routeLoading = ref(false)
+  const routeLoadingMessage = ref(DEFAULT_ROUTE_LOADING_MESSAGE)
 
   const darkMode = ref<boolean>((() => {
     try {
@@ -291,10 +308,19 @@ export const useAppStore = defineStore('app', () => {
     error.value = err
   }
 
+  function setRouteLoading(val: boolean, path?: string) {
+    routeLoading.value = val
+    if (val && path) {
+      routeLoadingMessage.value = ROUTE_LOADING_MESSAGES[path] || DEFAULT_ROUTE_LOADING_MESSAGE
+    }
+  }
+
   return {
     mode,
     loading,
     error,
+    routeLoading,
+    routeLoadingMessage,
     darkMode,
     themeColorPrimary,
     navVisibility,
@@ -313,6 +339,7 @@ export const useAppStore = defineStore('app', () => {
     setMode,
     setLoading,
     setError,
+    setRouteLoading,
     toggleDarkMode,
     setThemeColor,
     toggleNavVisibility,

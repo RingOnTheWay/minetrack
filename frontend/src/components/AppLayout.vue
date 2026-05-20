@@ -2,10 +2,13 @@
 import Sidebar from './Sidebar.vue'
 import TopBar from './TopBar.vue'
 import { useDataStore } from '@/stores/data'
-import { ref, provide } from 'vue'
+import { useAppStore } from '@/stores/app'
+import { prefetchRoutes } from '@/router'
+import { ref, provide, watch } from 'vue'
 import { onMounted } from 'vue'
 
 const data = useDataStore()
+const app = useAppStore()
 const sidebarOpen = ref(false)
 
 function toggleSidebar() {
@@ -23,6 +26,12 @@ provide('closeSidebar', closeSidebar)
 onMounted(() => {
   data.loadAll()
 })
+
+watch(() => data.loaded, (loaded) => {
+  if (loaded) {
+    prefetchRoutes()
+  }
+})
 </script>
 
 <template>
@@ -30,7 +39,17 @@ onMounted(() => {
     <Sidebar :open="sidebarOpen" @close="closeSidebar" />
     <div class="flex-1 flex flex-col overflow-hidden app-layout-inner min-w-0">
       <TopBar />
-      <div class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
+      <div class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 relative">
+        <Transition name="route-loading-fade">
+          <div v-if="app.routeLoading" class="absolute inset-0 z-10 flex items-center justify-center bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm">
+            <div class="flex flex-col items-center gap-3">
+              <div class="text-sm text-slate-500 dark:text-slate-400">{{ app.routeLoadingMessage }}</div>
+              <div class="w-36 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div class="h-full rounded-full loading-progress" />
+              </div>
+            </div>
+          </div>
+        </Transition>
         <slot />
       </div>
     </div>
@@ -62,6 +81,17 @@ onMounted(() => {
 }
 .loading-fade-enter-from,
 .loading-fade-leave-to {
+  opacity: 0;
+}
+
+.route-loading-fade-enter-active {
+  transition: opacity 0.15s ease;
+}
+.route-loading-fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+.route-loading-fade-enter-from,
+.route-loading-fade-leave-to {
   opacity: 0;
 }
 
