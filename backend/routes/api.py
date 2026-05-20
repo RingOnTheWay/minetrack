@@ -16,6 +16,12 @@ from backend.database.repositories import (
 )
 from backend.services.scanner import scan_server_folder, batch_scan_parent_folder, scan_archive, batch_scan_parent_folder_v2, _collect_scannable_items, _resolve_item_date
 from backend.services.archiver import is_archive_file, ARCHIVE_EXTENSIONS
+from backend.services.scheduler import (
+    get_auto_scan_config,
+    update_auto_scan_config,
+    get_last_scan_status,
+    _execute_auto_scan,
+)
 
 api_bp = Blueprint('api', __name__)
 
@@ -430,6 +436,67 @@ def batch_scan_stream():
         'Cache-Control': 'no-cache',
         'X-Accel-Buffering': 'no',
     })
+
+
+@api_bp.route('/api/auto_scan/config', methods=['GET'])
+def get_auto_scan_config_api():
+    config = get_auto_scan_config()
+    status = get_last_scan_status()
+    return jsonify({
+        'enabled': config['enabled'],
+        'folder': config['folder'],
+        'last_scan_time': status['last_scan_time'],
+        'last_scan_success': status['last_scan_success'],
+        'last_scan_date': status['last_scan_date'],
+        'last_scan_error': status['last_scan_error'],
+        'last_scan_result': status['last_scan_result'],
+    })
+
+
+@api_bp.route('/api/auto_scan/config', methods=['POST'])
+def update_auto_scan_config_api():
+    data = request.json
+    enabled = data.get('enabled')
+    folder = data.get('folder')
+
+    if enabled is not None and not isinstance(enabled, bool):
+        return jsonify({'error': 'enabled 必须为布尔值'}), 400
+    if folder is not None and not isinstance(folder, str):
+        return jsonify({'error': 'folder 必须为字符串'}), 400
+
+    if enabled is True and folder is not None and folder.strip():
+        if not os.path.exists(folder.strip()):
+            return jsonify({'error': '指定的文件夹路径不存在'}), 400
+
+    config = update_auto_scan_config(enabled=enabled, folder=folder)
+    return jsonify({
+        'success': True,
+        'enabled': config['enabled'],
+        'folder': config['folder'],
+    })
+
+
+@api_bp.route('/api/auto_scan/trigger', methods=['POST'])
+def trigger_auto_scan():
+    config = get_auto_scan_config()
+    if not config['enabled']:
+        return jsonify({'error': '自动扫描未启用'}), 400
+    if not config['folder'] or not os.path.exists(config['folder']):
+        return jsonify({'error': '未配置有效的扫描文件夹'}), 400
+
+    try:
+        _execute_auto_scan()
+        status = get_last_scan_status()
+        if status['last_scan_success']:
+            return jsonify({
+                'success': True,
+                'date': status['last_scan_date'],
+                'result': status['last_scan_result'],
+            })
+        else:
+            return jsonify({'success': False, 'error': status['last_scan_error']}), 500
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @api_bp.route('/api/batch_delete_stream', methods=['POST'])

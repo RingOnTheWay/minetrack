@@ -165,6 +165,22 @@ export const useAppStore = defineStore('app', () => {
     return []
   })())
 
+  const autoScanEnabled = ref<boolean>((() => {
+    try {
+      const stored = localStorage.getItem('autoScanEnabled')
+      if (stored !== null) return stored === 'true'
+    } catch {}
+    return false
+  })())
+
+  const autoScanFolder = ref<string>((() => {
+    try {
+      const stored = localStorage.getItem('autoScanFolder')
+      if (stored !== null) return stored
+    } catch {}
+    return ''
+  })())
+
   const currentTheme = computed<ThemeColor>(() => findPreset(themeColorPrimary.value))
   const isLocal = computed(() => mode.value === 'local')
   const isStatic = computed(() => mode.value === 'static')
@@ -222,6 +238,14 @@ export const useAppStore = defineStore('app', () => {
 
   function setBlacklist(val: string[]) {
     blacklist.value = val
+  }
+
+  function setAutoScanEnabled(val: boolean) {
+    autoScanEnabled.value = val
+  }
+
+  function setAutoScanFolder(val: string) {
+    autoScanFolder.value = val
   }
 
   watch(darkMode, (val) => {
@@ -287,6 +311,18 @@ export const useAppStore = defineStore('app', () => {
     } catch {}
   }, { deep: true })
 
+  watch(autoScanEnabled, (val) => {
+    try {
+      localStorage.setItem('autoScanEnabled', String(val))
+    } catch {}
+  })
+
+  watch(autoScanFolder, (val) => {
+    try {
+      localStorage.setItem('autoScanFolder', val)
+    } catch {}
+  })
+
   function initialize() {
     const searchParams = new URLSearchParams(window.location.search)
     if (searchParams.get('mode') === 'static' || window.location.protocol === 'file:') {
@@ -331,6 +367,8 @@ export const useAppStore = defineStore('app', () => {
     minPlaytimeHours,
     whitelist,
     blacklist,
+    autoScanEnabled,
+    autoScanFolder,
     currentTheme,
     isLocal,
     isStatic,
@@ -351,5 +389,7 @@ export const useAppStore = defineStore('app', () => {
     setMinPlaytimeHours,
     setWhitelist,
     setBlacklist,
+    setAutoScanEnabled,
+    setAutoScanFolder,
   }
 })

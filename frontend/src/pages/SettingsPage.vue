@@ -4,7 +4,8 @@ import { useI18n } from 'vue-i18n'
 import { useAppStore, themePresets } from '@/stores/app'
 import { useDataStore } from '@/stores/data'
 import type { NavKey } from '@/stores/app'
-import { Palette, User, Code, ExternalLink, Check, Scale, Calendar, LayoutList, Lock, BarChart3, Filter, X, Plus, Shield, ShieldOff, Clock, Pickaxe, UserCheck, Search } from 'lucide-vue-next'
+import { apiGet, apiPost } from '@/services/api'
+import { Palette, User, Code, ExternalLink, Check, Scale, Calendar, LayoutList, Lock, BarChart3, Filter, X, Plus, Shield, ShieldOff, Clock, Pickaxe, UserCheck, Search, FolderSync, FolderOpen, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-vue-next'
 import {
   LayoutDashboard, Map, Users, Swords, Hammer, Package, TrendingUp,
   Database,
@@ -116,6 +117,7 @@ function handleClickOutsideDefaultDropdown(e: MouseEvent) {
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutsideDefaultDropdown)
+  loadAutoScanStatus()
 })
 
 function toggleFilterEnabled() {
@@ -173,6 +175,104 @@ function onBlacklistKeydown(e: KeyboardEvent) {
   if (e.key === 'Enter') {
     e.preventDefault()
     addToBlacklist(blacklistInput.value)
+  }
+}
+
+const autoScanFolderInput = ref(app.autoScanFolder)
+const autoScanSyncing = ref(false)
+const autoScanLastStatus = ref<{
+  last_scan_time: string | null
+  last_scan_success: boolean | null
+  last_scan_date: string | null
+  last_scan_error: string | null
+  last_scan_result: any
+} | null>(null)
+const autoScanTriggering = ref(false)
+const autoScanTriggerResult = ref<any>(null)
+const autoScanTriggerError = ref('')
+
+async function loadAutoScanStatus() {
+  try {
+    const data = await apiGet<any>('/api/auto_scan/config')
+    autoScanLastStatus.value = {
+      last_scan_time: data.last_scan_time,
+      last_scan_success: data.last_scan_success,
+      last_scan_date: data.last_scan_date,
+      last_scan_error: data.last_scan_error,
+      last_scan_result: data.last_scan_result,
+    }
+    if (data.enabled !== app.autoScanEnabled) {
+      app.setAutoScanEnabled(data.enabled)
+    }
+    if (data.folder && data.folder !== app.autoScanFolder) {
+      app.setAutoScanFolder(data.folder)
+      autoScanFolderInput.value = data.folder
+    }
+  } catch {}
+}
+
+async function toggleAutoScan() {
+  const newVal = !app.autoScanEnabled
+  autoScanSyncing.value = true
+  try {
+    await apiPost('/api/auto_scan/config', {
+      enabled: newVal,
+      folder: app.autoScanFolder,
+    })
+    app.setAutoScanEnabled(newVal)
+  } catch {
+    app.setAutoScanEnabled(!newVal)
+  } finally {
+    autoScanSyncing.value = false
+  }
+}
+
+async function saveAutoScanFolder() {
+  const folder = autoScanFolderInput.value.trim()
+  autoScanSyncing.value = true
+  try {
+    await apiPost('/api/auto_scan/config', {
+      enabled: app.autoScanEnabled,
+      folder: folder,
+    })
+    app.setAutoScanFolder(folder)
+  } catch {
+    autoScanFolderInput.value = app.autoScanFolder
+  } finally {
+    autoScanSyncing.value = false
+  }
+}
+
+function onAutoScanFolderKeydown(e: KeyboardEvent) {
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    saveAutoScanFolder()
+  }
+}
+
+async function triggerAutoScan() {
+  autoScanTriggering.value = true
+  autoScanTriggerResult.value = null
+  autoScanTriggerError.value = ''
+  try {
+    const result = await apiPost<any>('/api/auto_scan/trigger', {})
+    autoScanTriggerResult.value = result
+    await loadAutoScanStatus()
+    await data.reload()
+  } catch (e: any) {
+    autoScanTriggerError.value = e.message || t('dataManage.operationFailed')
+  } finally {
+    autoScanTriggering.value = false
+  }
+}
+
+function formatScanTime(isoStr: string | null): string {
+  if (!isoStr) return '-'
+  try {
+    const d = new Date(isoStr)
+    return d.toLocaleString()
+  } catch {
+    return isoStr
   }
 }
 </script>
@@ -591,6 +691,121 @@ function onBlacklistKeydown(e: KeyboardEvent) {
             </div>
           </div>
 
+        </div>
+      </div>
+    </div>
+
+    <div
+      v-motion-slide-bottom :delay="93"
+      class="relative bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-5 md:p-8 border border-white/80 dark:border-slate-700/80 shadow-sm overflow-hidden"
+    >
+      <div class="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-brand/5 dark:from-brand/3 to-transparent rounded-full blur-3xl" />
+
+      <div class="relative">
+        <div class="flex items-center justify-between" :class="app.autoScanEnabled ? 'mb-8' : ''">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-gradient-to-br from-brand/20 to-brand/10 rounded-xl flex items-center justify-center">
+              <FolderSync class="w-6 h-6 text-brand dark:text-brand-light" />
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">{{ t('settings.autoScan') }}</h3>
+              <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('settings.autoScanDesc') }}</p>
+            </div>
+          </div>
+
+          <button
+            class="relative w-12 h-7 rounded-full transition-all duration-300"
+            :class="app.autoScanEnabled ? 'bg-brand' : 'bg-slate-300 dark:bg-slate-600'"
+            @click="toggleAutoScan"
+          >
+            <div
+              class="absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-sm transition-all duration-300"
+              :class="app.autoScanEnabled ? 'left-5.5' : 'left-0.5'"
+            />
+          </button>
+        </div>
+
+        <div v-if="app.autoScanEnabled" class="space-y-6">
+          <div>
+            <div class="flex items-center gap-2 mb-3">
+              <FolderOpen class="w-4 h-4 text-brand dark:text-brand-light" />
+              <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('settings.autoScanFolder') }}</label>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">{{ t('settings.autoScanFolderDesc') }}</p>
+            <div class="flex gap-2">
+              <input
+                v-model="autoScanFolderInput"
+                type="text"
+                :placeholder="t('settings.autoScanFolderPlaceholder')"
+                class="flex-1 px-3 py-2 bg-white/80 dark:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-lg text-sm dark:text-slate-200 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand/40 transition-all"
+                @keydown="onAutoScanFolderKeydown"
+                @blur="saveAutoScanFolder"
+              />
+            </div>
+          </div>
+
+          <div>
+            <div class="flex items-center gap-2 mb-3">
+              <Clock class="w-4 h-4 text-brand dark:text-brand-light" />
+              <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('settings.autoScanSchedule') }}</label>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('settings.autoScanScheduleDesc') }}</p>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <RefreshCw class="w-4 h-4 text-brand dark:text-brand-light" />
+                <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('settings.autoScanManualTrigger') }}</label>
+              </div>
+              <button
+                class="btn-brand inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all"
+                :disabled="autoScanTriggering || !app.autoScanFolder"
+                @click="triggerAutoScan"
+              >
+                <RefreshCw v-if="autoScanTriggering" class="w-3.5 h-3.5 animate-spin" />
+                <Play v-else class="w-3.5 h-3.5" />
+                {{ autoScanTriggering ? t('common.loading') : t('settings.autoScanTriggerNow') }}
+              </button>
+            </div>
+            <div v-if="autoScanTriggerError" class="p-3 bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-800/50 rounded-xl text-xs text-red-700 dark:text-red-400">{{ autoScanTriggerError }}</div>
+            <div v-if="autoScanTriggerResult && autoScanTriggerResult.success" class="p-3 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800/50 rounded-xl text-xs text-emerald-700 dark:text-emerald-400">
+              {{ t('settings.autoScanTriggerSuccess') }}: {{ t('dataManage.date') }}={{ autoScanTriggerResult.date }}, {{ t('dataManage.playerCount') }}={{ autoScanTriggerResult.result?.player_count }}
+            </div>
+          </div>
+
+          <div v-if="autoScanLastStatus && autoScanLastStatus.last_scan_time">
+            <div class="flex items-center gap-2 mb-3">
+              <component
+                :is="autoScanLastStatus.last_scan_success ? CheckCircle2 : AlertCircle"
+                class="w-4 h-4"
+                :class="autoScanLastStatus.last_scan_success ? 'text-emerald-500' : 'text-red-500'"
+              />
+              <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('settings.autoScanLastStatus') }}</label>
+            </div>
+            <div class="p-3 rounded-xl text-xs space-y-1"
+              :class="autoScanLastStatus.last_scan_success
+                ? 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-400'
+                : 'bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/50 text-red-700 dark:text-red-400'"
+            >
+              <div class="flex items-center gap-2">
+                <Clock class="w-3.5 h-3.5" />
+                <span>{{ t('settings.autoScanLastTime') }}: {{ formatScanTime(autoScanLastStatus.last_scan_time) }}</span>
+              </div>
+              <div v-if="autoScanLastStatus.last_scan_success && autoScanLastStatus.last_scan_date" class="flex items-center gap-2">
+                <Calendar class="w-3.5 h-3.5" />
+                <span>{{ t('settings.autoScanLastDate') }}: {{ autoScanLastStatus.last_scan_date }}</span>
+              </div>
+              <div v-if="autoScanLastStatus.last_scan_success && autoScanLastStatus.last_scan_result" class="flex items-center gap-2">
+                <BarChart3 class="w-3.5 h-3.5" />
+                <span>{{ t('dataManage.playerCount') }}: {{ autoScanLastStatus.last_scan_result.player_count }}</span>
+              </div>
+              <div v-if="!autoScanLastStatus.last_scan_success && autoScanLastStatus.last_scan_error" class="flex items-center gap-2">
+                <AlertCircle class="w-3.5 h-3.5" />
+                <span>{{ autoScanLastStatus.last_scan_error }}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -160,7 +160,20 @@
     "defaultSelectedEmpty": "未设置，默认全选所有玩家",
     "defaultSelectedHint": "配置后，各统计页面的玩家筛选将默认选中这些玩家；不在列表中的玩家仍可手动勾选。为空时默认显示全部玩家。",
     "selectFromPlayers": "从玩家列表中选择",
-    "clearAll": "清空"
+    "clearAll": "清空",
+    "autoScan": "自动扫描上传",
+    "autoScanDesc": "开启后，每日24:00自动扫描指定服务器文件夹并导入数据",
+    "autoScanFolder": "服务器文件夹路径",
+    "autoScanFolderDesc": "指定每日自动扫描的服务器文件夹路径，需包含 world 目录",
+    "autoScanFolderPlaceholder": "输入服务器文件夹路径",
+    "autoScanSchedule": "扫描时间",
+    "autoScanScheduleDesc": "每日 00:00 自动执行扫描，数据日期为前一天（确保24点扫描的数据不会变成当天）",
+    "autoScanManualTrigger": "手动触发",
+    "autoScanTriggerNow": "立即扫描",
+    "autoScanTriggerSuccess": "扫描成功",
+    "autoScanLastStatus": "上次扫描状态",
+    "autoScanLastTime": "扫描时间",
+    "autoScanLastDate": "数据日期"
   },
   "dateRange": {
     "allDates": "全部日期",

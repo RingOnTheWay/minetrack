@@ -160,7 +160,20 @@
     "defaultSelectedEmpty": "Not set, all players selected by default",
     "defaultSelectedHint": "When configured, stats pages will select these players by default; others can still be manually checked. When empty, all players are shown by default.",
     "selectFromPlayers": "Select from player list",
-    "clearAll": "Clear All"
+    "clearAll": "Clear All",
+    "autoScan": "Auto Scan & Upload",
+    "autoScanDesc": "When enabled, automatically scans the specified server folder and imports data daily at midnight",
+    "autoScanFolder": "Server Folder Path",
+    "autoScanFolderDesc": "Specify the server folder path for daily auto-scanning, must contain a world directory",
+    "autoScanFolderPlaceholder": "Enter server folder path",
+    "autoScanSchedule": "Scan Schedule",
+    "autoScanScheduleDesc": "Auto scan runs daily at 00:00, data date is set to the previous day (ensures midnight scan data is not labeled as today)",
+    "autoScanManualTrigger": "Manual Trigger",
+    "autoScanTriggerNow": "Scan Now",
+    "autoScanTriggerSuccess": "Scan successful",
+    "autoScanLastStatus": "Last Scan Status",
+    "autoScanLastTime": "Scan Time",
+    "autoScanLastDate": "Data Date"
   },
   "dateRange": {
     "allDates": "All Dates",
