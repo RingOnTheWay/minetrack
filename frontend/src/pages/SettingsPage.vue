@@ -5,7 +5,7 @@ import { useAppStore, themePresets } from '@/stores/app'
 import { useDataStore } from '@/stores/data'
 import type { NavKey } from '@/stores/app'
 import { apiGet, apiPost } from '@/services/api'
-import { Palette, User, Code, ExternalLink, Check, Scale, Calendar, LayoutList, Lock, BarChart3, Filter, X, Plus, Shield, ShieldOff, Clock, Pickaxe, UserCheck, Search, FolderSync, FolderOpen, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-vue-next'
+import { Palette, User, Code, ExternalLink, Check, Scale, Calendar, LayoutList, Lock, BarChart3, Filter, X, Plus, Shield, ShieldOff, Clock, Pickaxe, UserCheck, Search, FolderSync, FolderOpen, RefreshCw, AlertCircle, CheckCircle2, Play, HardDrive, ArrowLeft, Folder, Loader2 } from 'lucide-vue-next'
 import {
   LayoutDashboard, Map, Users, Swords, Hammer, Package, TrendingUp,
   Database,
@@ -274,6 +274,48 @@ function formatScanTime(isoStr: string | null): string {
   } catch {
     return isoStr
   }
+}
+
+const showFolderBrowser = ref(false)
+const folderBrowserPath = ref('')
+const folderBrowserParent = ref('')
+const folderBrowserDirs = ref<{name: string; path: string; accessible: boolean}[]>([])
+const folderBrowserIsRoot = ref(false)
+const folderBrowserLoading = ref(false)
+const folderBrowserError = ref('')
+
+async function openFolderBrowser() {
+  folderBrowserError.value = ''
+  showFolderBrowser.value = true
+  await browseTo('')
+}
+
+async function browseTo(path: string) {
+  folderBrowserLoading.value = true
+  folderBrowserError.value = ''
+  try {
+    const params: Record<string, string> = { _: String(Date.now()) }
+    if (path) params.path = path
+    const data = await apiGet<any>('/api/browse', params)
+    folderBrowserPath.value = data.path
+    folderBrowserParent.value = data.parent
+    folderBrowserIsRoot.value = data.is_root
+    if (data.is_root) {
+      folderBrowserDirs.value = data.dirs.map((d: string) => ({ name: d, path: d, accessible: true }))
+    } else {
+      folderBrowserDirs.value = data.dirs
+    }
+  } catch (e: any) {
+    folderBrowserError.value = e.message || t('dataManage.operationFailed')
+  } finally {
+    folderBrowserLoading.value = false
+  }
+}
+
+function selectFolderAndClose() {
+  autoScanFolderInput.value = folderBrowserPath.value
+  saveAutoScanFolder()
+  showFolderBrowser.value = false
 }
 </script>
 
@@ -741,6 +783,9 @@ function formatScanTime(isoStr: string | null): string {
                 @keydown="onAutoScanFolderKeydown"
                 @blur="saveAutoScanFolder"
               />
+              <button class="px-3 py-2 bg-brand/10 dark:bg-brand/20 hover:bg-brand/20 dark:hover:bg-brand/30 text-brand dark:text-brand-light rounded-lg transition-all flex items-center gap-2" @click="openFolderBrowser">
+                <FolderOpen class="w-4 h-4" />
+              </button>
             </div>
           </div>
 
@@ -885,6 +930,66 @@ function formatScanTime(isoStr: string | null): string {
         </div>
       </div>
     </div>
+
+    <Teleport to="body">
+      <div v-if="showFolderBrowser" class="global-loading-overlay" @click.self="showFolderBrowser = false">
+        <div class="folder-browser-card dark:bg-slate-800 dark:border-slate-700">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-gradient-to-br from-brand/20 dark:from-brand/20 to-brand/10 dark:to-brand/15 rounded-xl flex items-center justify-center">
+                <HardDrive class="w-5 h-5 text-brand dark:text-brand-light" />
+              </div>
+              <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">{{ t('dataManage.selectFolder') }}</h3>
+            </div>
+            <button class="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-all text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" @click="showFolderBrowser = false">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+
+          <div class="mb-3 px-3 py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-xs text-slate-500 dark:text-slate-400 font-mono break-all">
+            {{ folderBrowserPath || t('dataManage.selectDrive') }}
+          </div>
+
+          <div v-if="folderBrowserError" class="mb-3 px-3 py-2 bg-red-50 dark:bg-red-900/30 rounded-lg text-xs text-red-600 dark:text-red-400">{{ folderBrowserError }}</div>
+
+          <div v-if="folderBrowserLoading" class="py-12 text-center">
+            <Loader2 class="w-6 h-6 animate-spin text-brand mx-auto" />
+          </div>
+          <div v-else class="max-h-72 overflow-y-auto overflow-x-hidden hide-scrollbar space-y-0.5">
+            <button
+              v-if="folderBrowserParent !== '' || folderBrowserIsRoot"
+              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-all"
+              @click="browseTo(folderBrowserIsRoot ? '' : folderBrowserParent)"
+            >
+              <ArrowLeft class="w-4 h-4" />
+              <span>{{ folderBrowserIsRoot ? t('dataManage.selectDrive') : '..' }}</span>
+            </button>
+            <button
+              v-for="dir in folderBrowserDirs"
+              :key="dir.path"
+              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all"
+              :class="dir.accessible ? 'text-slate-700 dark:text-slate-300 hover:bg-brand/5 dark:hover:bg-brand/10 hover:text-brand dark:hover:text-brand-light' : 'text-slate-300 dark:text-slate-600 cursor-not-allowed'"
+              @click="dir.accessible && browseTo(dir.path)"
+            >
+              <Lock v-if="!dir.accessible" class="w-4 h-4 text-slate-300 dark:text-slate-600" />
+              <Folder v-else class="w-4 h-4 text-brand/60 dark:text-brand-light/60" />
+              <span>{{ dir.name }}</span>
+            </button>
+          </div>
+
+          <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center justify-end gap-2">
+            <button class="px-4 py-2 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-all" @click="showFolderBrowser = false">{{ t('dataManage.cancel') }}</button>
+            <button
+              class="btn-brand px-4 py-2 text-sm rounded-lg transition-all"
+              :disabled="!folderBrowserPath || folderBrowserIsRoot"
+              @click="selectFolderAndClose"
+            >
+              {{ t('dataManage.selectThisFolder') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
