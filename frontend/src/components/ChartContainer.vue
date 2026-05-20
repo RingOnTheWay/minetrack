@@ -5,14 +5,14 @@ import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { LineChart, BarChart } from 'echarts/charts'
 import {
-  GridComponent, TooltipComponent, LegendComponent,
+  GridComponent, TooltipComponent, LegendComponent, LegendScrollComponent,
   DataZoomComponent
 } from 'echarts/components'
 import { useAppStore } from '@/stores/app'
 import { useI18n } from 'vue-i18n'
 import { BarChart3 } from 'lucide-vue-next'
 
-use([CanvasRenderer, LineChart, BarChart, GridComponent, TooltipComponent, LegendComponent, DataZoomComponent])
+use([CanvasRenderer, LineChart, BarChart, GridComponent, TooltipComponent, LegendComponent, LegendScrollComponent, DataZoomComponent])
 
 export interface ChartSeries {
   name: string
@@ -29,9 +29,11 @@ const props = withDefaults(defineProps<{
   yAxisLabel?: string
   chartType?: 'line' | 'bar'
   height?: string
+  maxLegendItems?: number
 }>(), {
   chartType: 'line',
   height: '350px',
+  maxLegendItems: 0,
 })
 
 const app = useAppStore()
@@ -42,12 +44,19 @@ const isEmpty = computed(() => {
   return props.series.every(s => !s.data || s.data.length === 0)
 })
 
+const chartHeight = computed(() => {
+  const base = parseInt(props.height) || 350
+  const extra = Math.max(0, props.series.length - 5) * 10
+  return `${base + extra}px`
+})
+
 const option = computed(() => {
   const isArea = props.chartType === 'line'
   const dark = app.isDark
   const maxSeries = app.maxLegendPlayers
 
   const limitedSeries = props.series.slice(0, maxSeries)
+  const useScrollLegend = limitedSeries.length > 5
 
   const seriesList = limitedSeries.map((s) => {
     const base: any = {
@@ -138,19 +147,24 @@ const option = computed(() => {
       },
     },
     legend: {
+      type: useScrollLegend ? 'scroll' : 'plain',
       data: limitedSeries.map(s => s.name),
       bottom: 0,
       icon: 'circle',
       itemWidth: 8,
       itemHeight: 8,
       itemGap: 20,
+      pageIconSize: 12,
+      pageIconColor: dark ? '#94a3b8' : '#64748b',
+      pageIconInactiveColor: dark ? '#334155' : '#cbd5e1',
+      pageTextStyle: { fontSize: 12, color: dark ? '#94a3b8' : '#64748b' },
       textStyle: { fontSize: 12, color: dark ? '#94a3b8' : '#64748b' },
     },
     grid: {
       left: 10,
       right: 10,
       top: 10,
-      bottom: 40,
+      bottom: useScrollLegend ? 50 : 35,
       containLabel: true,
     },
     xAxis: {
@@ -189,11 +203,11 @@ const option = computed(() => {
 </script>
 
 <template>
-  <div v-if="isEmpty" :style="{ height, width: '100%' }" class="flex flex-col items-center justify-center gap-3">
+  <div v-if="isEmpty" :style="{ height: chartHeight, width: '100%' }" class="flex flex-col items-center justify-center gap-3">
     <div class="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-700/50 flex items-center justify-center">
       <BarChart3 class="w-8 h-8 text-slate-300 dark:text-slate-600" />
     </div>
     <span class="text-sm text-slate-400 dark:text-slate-500">{{ t('common.noData') }}</span>
   </div>
-  <VChart v-else :option="option" :style="{ height, width: '100%' }" autoresize />
+  <VChart v-else :option="option" :style="{ height: chartHeight, width: '100%' }" autoresize />
 </template>
