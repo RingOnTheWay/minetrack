@@ -36,6 +36,8 @@ export async function consumeSSE(
   handlers: {
     onStart?: (data: any) => void
     onProgress?: (data: any) => void
+    onExtracting?: (data: any) => void
+    onExtractingProgress?: (data: any) => void
     onComplete: (data: any) => void
   },
 ): Promise<void> {
@@ -65,6 +67,8 @@ export async function consumeSSE(
       try {
         const data = JSON.parse(line.slice(6))
         if (data.type === 'start' && handlers.onStart) handlers.onStart(data)
+        else if (data.type === 'extracting' && handlers.onExtracting) handlers.onExtracting(data)
+        else if (data.type === 'extracting_progress' && handlers.onExtractingProgress) handlers.onExtractingProgress(data)
         else if (data.type === 'progress' && handlers.onProgress) handlers.onProgress(data)
         else if (data.type === 'complete') handlers.onComplete(data)
       } catch { /* ignore */ }

@@ -14,8 +14,13 @@ from backend.database.repositories import (
     PlayerStatsRepository,
     DetailStatsRepository,
 )
-from backend.services.scanner import scan_server_folder, batch_scan_parent_folder, scan_archive, batch_scan_parent_folder_v2, _collect_scannable_items, _resolve_item_date
-from backend.services.archiver import is_archive_file, ARCHIVE_EXTENSIONS
+from backend.services.scanner import (
+    scan_server_folder, batch_scan_parent_folder, scan_archive,
+    batch_scan_parent_folder_v2, _collect_scannable_items, _resolve_item_date,
+    _parse_date_from_content, parse_date_from_folder_name,
+)
+from backend.services.archiver import is_archive_file, ARCHIVE_EXTENSIONS, ArchiveReader
+from backend.services.parser import load_usercache_from_content, parse_all_stats_from_contents
 from backend.services.scheduler import (
     get_auto_scan_config,
     update_auto_scan_config,
@@ -44,9 +49,11 @@ def browse_directory():
         if not os.path.isdir(path):
             return jsonify({'error': '路径不是文件夹'}), 400
         parent = os.path.dirname(path)
+        is_drive_root = False
         if sys.platform == 'win32':
             if len(path) == 3 and path[1] == ':' and path[2] == '\\':
-                parent = ''
+                parent = '__root__'
+                is_drive_root = True
         else:
             if path == '/':
                 parent = ''
@@ -356,7 +363,7 @@ def list_scannable():
     if not parent_folder or not os.path.exists(parent_folder):
         return jsonify({'error': '父文件夹不存在'}), 400
 
-    from backend.services.scanner import parse_date_from_server_properties, parse_date_from_folder_name
+    from backend.services.scanner import parse_date_from_server_properties
     from datetime import datetime
 
     items = _collect_scannable_items(parent_folder)
@@ -382,23 +389,16 @@ def batch_scan_stream():
     if not parent_folder or not os.path.exists(parent_folder):
         return jsonify({'error': '父文件夹不存在'}), 400
 
-    from backend.services.scanner import parse_date_from_server_properties, parse_date_from_folder_name
-    from backend.services.archiver import ArchiveTempExtractor
-
-    items = _collect_scannable_items(parent_folder)
-    folders = []
-    for item in items:
-        try:
-            date = _resolve_item_date(item)
-        except Exception:
-            mtime = os.path.getmtime(item['path'])
-            date = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d')
-        folders.append({'folder': item['path'], 'date': date, 'name': item['name'], 'type': item['type']})
-
     filter_config = data.get('filter_config', {})
+    scan_mode = data.get('scan_mode', 'folder')
 
     def generate():
-        total = len(folders)
+        items = _collect_scannable_items(parent_folder)
+        if scan_mode == 'folder':
+            items = [it for it in items if it['type'] == 'folder']
+        elif scan_mode == 'archive':
+            items = [it for it in items if it['type'] == 'archive']
+        total = len(items)
         yield f"data: {_json.dumps({'type': 'start', 'total': total})}\n\n"
 
         conn = get_connection()
@@ -406,17 +406,55 @@ def batch_scan_stream():
         filtered_count = 0
         errors = []
 
-        for i, item in enumerate(folders):
-            yield f"data: {_json.dumps({'type': 'progress', 'current': i + 1, 'total': total, 'name': item['name']})}\n\n"
-            extractor = None
+        for i, item in enumerate(items):
             try:
                 if item['type'] == 'archive':
-                    extractor = ArchiveTempExtractor()
-                    server_folder = extractor.extract(item['folder'])
-                else:
-                    server_folder = item['folder']
+                    yield f"data: {_json.dumps({'type': 'extracting', 'current': i + 1, 'total': total, 'name': item['name'], 'item_type': 'archive'})}\n\n"
 
-                result = scan_server_folder(server_folder, date=item['date'], filter_config=filter_config, conn=conn)
+                    reader = ArchiveReader(item['path'])
+                    for current, extract_total, filename in reader.read_needed_gen():
+                        yield f"data: {_json.dumps({'type': 'extracting_progress', 'current': current, 'extract_total': extract_total, 'filename': filename})}\n\n"
+
+                    archive_data = reader.needed_data
+                    if not archive_data or not archive_data.get('server_properties'):
+                        raise ValueError('压缩包内未找到 server.properties')
+
+                    try:
+                        date = _parse_date_from_content(archive_data['server_properties'])
+                    except ValueError:
+                        try:
+                            date = parse_date_from_folder_name(item['name'])
+                        except ValueError:
+                            mtime = os.path.getmtime(item['path'])
+                            date = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d')
+
+                    uuid_to_name = {}
+                    if archive_data.get('usercache'):
+                        uuid_to_name = load_usercache_from_content(archive_data['usercache'])
+
+                    map_sizes = reader.compute_map_sizes()
+                    stats_contents = archive_data.get('stats', {})
+
+                    result = scan_server_folder(
+                        '', date=date, filter_config=filter_config, conn=conn,
+                        map_sizes_override=map_sizes,
+                        usercache_override=uuid_to_name,
+                        stats_contents_override=stats_contents,
+                    )
+                else:
+                    yield f"data: {_json.dumps({'type': 'progress', 'current': i + 1, 'total': total, 'name': item['name'], 'item_type': 'folder'})}\n\n"
+
+                    try:
+                        date = parse_date_from_server_properties(item['path'])
+                    except ValueError:
+                        try:
+                            date = parse_date_from_folder_name(item['name'])
+                        except ValueError:
+                            mtime = os.path.getmtime(item['path'])
+                            date = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d')
+
+                    result = scan_server_folder(item['path'], date=date, filter_config=filter_config, conn=conn)
+
                 if result.get('filtered_count', 0) > 0:
                     filtered_count += result['filtered_count']
                 imported += 1
@@ -424,9 +462,6 @@ def batch_scan_stream():
                     conn.commit()
             except Exception as e:
                 errors.append({'folder': item['name'], 'error': str(e)})
-            finally:
-                if extractor:
-                    extractor.cleanup()
 
         conn.close()
 

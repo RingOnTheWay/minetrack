@@ -206,7 +206,8 @@
     "parentFolder": "Parent Folder Path",
     "parentFolderPlaceholder": "Enter the folder path",
     "batchHint": "Each subfolder under the parent folder will be treated as a backup, date will be auto-detected from server.properties",
-    "batchHintV2": "Each subfolder and archive under the parent folder will be treated as a backup, date will be auto-detected from server.properties",
+    "batchHintV2": "Each subfolder under the parent folder will be treated as a backup, date will be auto-detected from server.properties",
+    "batchArchiveHint": "⚠ Archive batch scanning requires extracting each file, which is slower. Folder mode is recommended",
     "folderMode": "Folder",
     "archiveMode": "Archive",
     "archivePath": "Archive File Path",
@@ -214,6 +215,8 @@
     "archiveHint": "Supports zip, tar.gz, 7z, rar and other common archive formats",
     "selectArchive": "Select Archive",
     "archiveCount": "{n} archive(s) found",
+    "extracting": "Reading",
+    "extractProgress": "Read Progress",
     "startBatchScan": "Start Batch Scan",
     "batchScanSuccess": "Batch scan import completed",
     "total": "Total",
@@ -252,6 +255,7 @@
     "deleteAllSuccess": "All data deleted",
     "operationFailed": "Operation failed",
     "deleteAllConfirm": "Confirm Delete All Data",
-    "filteredOut": "{n} filtered out"
+    "filteredOut": "{n} filtered out",
+    "scanErrors": "Scan Errors"
   }
 }

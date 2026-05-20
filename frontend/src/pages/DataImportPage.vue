@@ -25,6 +25,7 @@ const showScanDatePicker = ref(false)
 const scanDateInputRef = ref<HTMLElement | null>(null)
 
 const batchFolder = ref('')
+const batchScanMode = ref<'folder' | 'archive'>('folder')
 const batchLoading = ref(false)
 const batchResult = ref<any>(null)
 const batchError = ref('')
@@ -58,8 +59,13 @@ const rangeInputRef = ref<HTMLElement | null>(null)
 
 const globalLoading = ref(false)
 const globalLoadingText = ref('')
+const globalLoadingSubText = ref('')
 const progressCurrent = ref(0)
 const progressTotal = ref(0)
+const decompressing = ref(false)
+const decompressCurrent = ref(0)
+const decompressTotal = ref(0)
+const decompressFilename = ref('')
 
 onMounted(() => { loadDates(); document.addEventListener('click', handleClickOutside); document.addEventListener('scroll', handleScroll, true) })
 onBeforeUnmount(() => { document.removeEventListener('click', handleClickOutside); document.removeEventListener('scroll', handleScroll, true) })
@@ -157,19 +163,48 @@ async function handleScan() {
 async function handleBatchScan() {
   if (!batchFolder.value.trim()) return
   batchLoading.value = true; batchResult.value = null; batchError.value = ''
-  globalLoading.value = true; globalLoadingText.value = t('dataManage.batchScan')
+  globalLoadingSubText.value = ''
   progressTotal.value = 0; progressCurrent.value = 0
+  decompressing.value = false; decompressCurrent.value = 0; decompressTotal.value = 0
 
   try {
-    await consumeSSE('/api/batch_scan_stream', { parent_folder: batchFolder.value.trim(), filter_config: getFilterConfig() }, {
-      onStart: (data) => { progressTotal.value = data.total },
+    await consumeSSE('/api/batch_scan_stream', { parent_folder: batchFolder.value.trim(), filter_config: getFilterConfig(), scan_mode: batchScanMode.value }, {
+      onStart: (data) => {
+        progressTotal.value = data.total
+        if (data.total > 0) {
+          progressCurrent.value = 0
+          globalLoading.value = true
+          globalLoadingText.value = `${t('dataManage.batchScan')} (0/${data.total})`
+        }
+      },
       onProgress: (data) => {
         progressTotal.value = data.total
         progressCurrent.value = data.current
+        decompressing.value = false
         globalLoadingText.value = `${t('dataManage.batchScan')} (${data.current}/${data.total})`
+        const typeLabel = data.item_type === 'archive' ? t('dataManage.archiveMode') : t('dataManage.folderMode')
+        globalLoadingSubText.value = `${typeLabel}: ${data.name}`
+      },
+      onExtracting: (data) => {
+        progressTotal.value = data.total
+        progressCurrent.value = data.current
+        decompressing.value = true
+        decompressCurrent.value = 0
+        decompressTotal.value = 0
+        decompressFilename.value = ''
+        globalLoading.value = true
+        globalLoadingText.value = `${t('dataManage.batchScan')} (${data.current}/${data.total})`
+        globalLoadingSubText.value = `${t('dataManage.extracting')} ${data.name}`
+      },
+      onExtractingProgress: (data) => {
+        decompressCurrent.value = data.current
+        decompressTotal.value = data.extract_total
+        decompressFilename.value = data.filename || ''
       },
       onComplete: (data) => {
-        batchResult.value = { imported: data.imported, total: data.total, filtered_count: data.filtered_count }
+        batchResult.value = { imported: data.imported, total: data.total, filtered_count: data.filtered_count, errors: data.errors || [] }
+        globalLoadingSubText.value = ''
+        decompressing.value = false
         globalLoading.value = false
       },
     })
@@ -177,7 +212,7 @@ async function handleBatchScan() {
   } catch (e: any) {
     batchError.value = e.message || t('dataManage.operationFailed')
   } finally {
-    batchLoading.value = false; globalLoading.value = false
+    batchLoading.value = false; globalLoading.value = false; globalLoadingSubText.value = ''; decompressing.value = false
   }
 }
 
@@ -289,7 +324,7 @@ function handleRangeClear() {
 
 const showFolderBrowser = ref(false)
 const folderBrowserTarget = ref<'scan' | 'batch'>('scan')
-const folderBrowserMode = ref<'folder' | 'archive'>('folder')
+const folderBrowserMode = ref<'folder' | 'archive' | 'batch'>('folder')
 const folderBrowserPath = ref('')
 const folderBrowserParent = ref('')
 const folderBrowserDirs = ref<{name: string; path: string; accessible: boolean}[]>([])
@@ -300,7 +335,11 @@ const folderBrowserError = ref('')
 
 async function openFolderBrowser(target: 'scan' | 'batch') {
   folderBrowserTarget.value = target
-  folderBrowserMode.value = (target === 'scan' && scanMode.value === 'archive') ? 'archive' : 'folder'
+  if (target === 'scan') {
+    folderBrowserMode.value = scanMode.value === 'archive' ? 'archive' : 'folder'
+  } else {
+    folderBrowserMode.value = batchScanMode.value === 'archive' ? 'batch' : 'batch'
+  }
   folderBrowserError.value = ''
   folderBrowserArchives.value = []
   showFolderBrowser.value = true
@@ -464,6 +503,25 @@ function selectArchiveAndClose(archivePath: string) {
         </div>
 
         <div class="space-y-4">
+          <div class="flex items-center gap-3">
+            <button
+              class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all"
+              :class="batchScanMode === 'folder' ? 'bg-brand/10 dark:bg-brand/20 text-brand dark:text-brand-light' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'"
+              @click="batchScanMode = 'folder'"
+            >
+              <Folder class="w-4 h-4" />
+              {{ t('dataManage.folderMode') }}
+            </button>
+            <button
+              class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all"
+              :class="batchScanMode === 'archive' ? 'bg-brand/10 dark:bg-brand/20 text-brand dark:text-brand-light' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'"
+              @click="batchScanMode = 'archive'"
+            >
+              <FileArchive class="w-4 h-4" />
+              {{ t('dataManage.archiveMode') }}
+            </button>
+          </div>
+
           <div>
             <label class="block mb-2 text-sm font-medium text-slate-600 dark:text-slate-400">{{ t('dataManage.parentFolder') }}</label>
             <div class="flex gap-2">
@@ -473,7 +531,8 @@ function selectArchiveAndClose(archivePath: string) {
               </button>
             </div>
           </div>
-          <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('dataManage.batchHintV2') }}</p>
+          <p v-if="batchScanMode === 'folder'" class="text-xs text-slate-500 dark:text-slate-400">{{ t('dataManage.batchHintV2') }}</p>
+          <p v-else class="text-xs text-amber-600 dark:text-amber-400">{{ t('dataManage.batchArchiveHint') }}</p>
           <button
             class="btn-brand inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium transition-all"
             :disabled="batchLoading || !batchFolder.trim()"
@@ -490,6 +549,10 @@ function selectArchiveAndClose(archivePath: string) {
           <div class="font-semibold text-emerald-800 dark:text-emerald-300 text-sm mb-2">{{ t('dataManage.batchScanSuccess') }}</div>
           <div class="text-xs text-emerald-700 dark:text-emerald-400">
             {{ t('dataManage.importedDays', { n: batchResult.imported }) }}<template v-if="batchResult.filtered_count"> · {{ t('dataManage.filteredOut', { n: batchResult.filtered_count }) }}</template>
+          </div>
+          <div v-if="batchResult.errors && batchResult.errors.length" class="mt-3 pt-3 border-t border-emerald-200 dark:border-emerald-700/50">
+            <div class="text-xs font-medium text-red-600 dark:text-red-400 mb-1">{{ t('dataManage.scanErrors') }}</div>
+            <div v-for="(err, idx) in batchResult.errors" :key="idx" class="text-xs text-red-500 dark:text-red-400">{{ err.folder }}: {{ err.error }}</div>
           </div>
         </div>
       </div>
@@ -658,10 +721,10 @@ function selectArchiveAndClose(archivePath: string) {
             <button
               v-if="folderBrowserParent !== '' || folderBrowserIsRoot"
               class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-all"
-              @click="browseTo(folderBrowserIsRoot ? '' : folderBrowserParent)"
+              @click="browseTo(folderBrowserParent === '__root__' ? '' : folderBrowserParent)"
             >
               <ArrowLeft class="w-4 h-4" />
-              <span>{{ folderBrowserIsRoot ? t('dataManage.selectDrive') : '..' }}</span>
+              <span>{{ (folderBrowserIsRoot || folderBrowserParent === '__root__') ? t('dataManage.selectDrive') : '..' }}</span>
             </button>
             <button
               v-for="dir in folderBrowserDirs"
@@ -675,11 +738,12 @@ function selectArchiveAndClose(archivePath: string) {
               <span>{{ dir.name }}</span>
             </button>
             <button
-              v-if="folderBrowserMode === 'archive'"
+              v-if="folderBrowserMode === 'archive' || folderBrowserMode === 'batch'"
               v-for="archive in folderBrowserArchives"
               :key="archive.path"
-              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-brand/5 dark:hover:bg-brand/10 hover:text-brand dark:hover:text-brand-light transition-all"
-              @click="selectArchiveAndClose(archive.path)"
+              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all"
+              :class="folderBrowserMode === 'archive' ? 'text-slate-700 dark:text-slate-300 hover:bg-brand/5 dark:hover:bg-brand/10 hover:text-brand dark:hover:text-brand-light' : 'text-slate-400 dark:text-slate-500'"
+              @click="folderBrowserMode === 'archive' && selectArchiveAndClose(archive.path)"
             >
               <FileArchive class="w-4 h-4 text-amber-500 dark:text-amber-400" />
               <span>{{ archive.name }}</span>
@@ -687,14 +751,14 @@ function selectArchiveAndClose(archivePath: string) {
           </div>
 
           <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
-            <div v-if="folderBrowserMode === 'archive' && folderBrowserArchives.length > 0" class="text-xs text-slate-400 dark:text-slate-500">
+            <div v-if="(folderBrowserMode === 'archive' || folderBrowserMode === 'batch') && folderBrowserArchives.length > 0" class="text-xs text-slate-400 dark:text-slate-500">
               {{ t('dataManage.archiveCount', { n: folderBrowserArchives.length }) }}
             </div>
             <div v-else></div>
             <div class="flex gap-2">
               <button class="px-4 py-2 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-all" @click="showFolderBrowser = false">{{ t('dataManage.cancel') }}</button>
               <button
-                v-if="folderBrowserMode === 'folder'"
+                v-if="folderBrowserMode !== 'archive'"
                 class="btn-brand px-4 py-2 text-sm rounded-lg transition-all"
                 :disabled="!folderBrowserPath || folderBrowserIsRoot"
                 @click="selectFolderAndClose"
@@ -753,13 +817,23 @@ function selectArchiveAndClose(archivePath: string) {
         <div class="global-loading-card dark:bg-slate-800">
           <Loader2 class="w-12 h-12 animate-spin text-brand" />
           <div class="mt-6 text-base font-semibold text-slate-700 dark:text-slate-200">{{ globalLoadingText }}</div>
+          <div v-if="globalLoadingSubText" class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ globalLoadingSubText }}</div>
+          <div v-if="decompressing && decompressTotal > 0" class="mt-3 w-64">
+            <div class="flex items-center justify-between text-xs text-slate-400 dark:text-slate-500 mb-1">
+              <span>{{ t('dataManage.extractProgress') }}</span>
+              <span>{{ decompressCurrent }} / {{ decompressTotal }}</span>
+            </div>
+            <div class="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div class="h-full bg-brand/60 rounded-full transition-all duration-150 ease-out" :style="{ width: `${decompressTotal > 0 ? (decompressCurrent / decompressTotal) * 100 : 0}%` }" />
+            </div>
+          </div>
           <div v-if="progressTotal > 0" class="mt-4 w-64">
             <div class="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
               <div class="h-full bg-brand rounded-full transition-all duration-300 ease-out" :style="{ width: `${progressTotal > 0 ? (progressCurrent / progressTotal) * 100 : 0}%` }" />
             </div>
             <div class="mt-2 text-xs text-slate-400 dark:text-slate-500 text-center">{{ progressCurrent }} / {{ progressTotal }}</div>
           </div>
-          <div v-else class="mt-2 text-sm text-slate-400 dark:text-slate-500">{{ t('common.loading') }}</div>
+          <div v-else-if="!decompressing" class="mt-2 text-sm text-slate-400 dark:text-slate-500">{{ t('common.loading') }}</div>
         </div>
       </div>
     </Teleport>

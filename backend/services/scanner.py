@@ -1,6 +1,8 @@
 import os
 import re
 import sqlite3
+import tempfile
+import shutil
 from datetime import datetime
 from typing import Optional
 
@@ -13,7 +15,10 @@ from backend.database.repositories import (
 )
 from backend.services.parser import (
     load_usercache,
+    load_usercache_from_content,
     parse_player_stats,
+    parse_all_stats,
+    parse_all_stats_from_contents,
     parse_detail_stats,
     parse_battle_stats,
     parse_craft_stats,
@@ -23,7 +28,8 @@ from backend.services.parser import (
 )
 from backend.services.archiver import (
     is_archive_file,
-    ArchiveTempExtractor,
+    ArchiveReader,
+    _find_server_folder,
 )
 
 
@@ -47,48 +53,44 @@ MAP_FOLDERS = [
 ]
 
 
-def parse_date_from_server_properties(server_folder: str) -> str:
-    props_path = os.path.join(server_folder, 'server.properties')
-    if not os.path.exists(props_path):
-        raise ValueError('server.properties 文件不存在')
-
-    with open(props_path, 'r', encoding='utf-8', errors='ignore') as f:
-        content = f.read()
-
+def _parse_date_from_content(content: str) -> str:
     patterns = [
         r'#\w{3}\s+(\w{3})\s+(\d{1,2})\s+\d{2}:\d{2}:\d{2}\s+\w{3,4}\s+(\d{4})',
         r'#(\d{4})-(\d{1,2})-(\d{1,2})',
         r'#(\d{1,2})/(\d{1,2})/(\d{4})',
     ]
-
     month_map = {
         'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
         'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08',
         'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12',
     }
-
     for line in content.splitlines():
         if not line.startswith('#'):
             continue
-
         match = re.search(patterns[0], line)
         if match:
             month_str, day, year = match.group(1), match.group(2), match.group(3)
             month = month_map.get(month_str)
             if month:
                 return f"{year}-{month}-{day.zfill(2)}"
-
         match = re.search(patterns[1], line)
         if match:
             year, month, day = match.group(1), match.group(2), match.group(3)
             return f"{year}-{month.zfill(2)}-{day.zfill(2)}"
-
         match = re.search(patterns[2], line)
         if match:
             month, day, year = match.group(1), match.group(2), match.group(3)
             return f"{year}-{month.zfill(2)}-{day.zfill(2)}"
-
     raise ValueError('无法从 server.properties 解析日期')
+
+
+def parse_date_from_server_properties(server_folder: str) -> str:
+    props_path = os.path.join(server_folder, 'server.properties')
+    if not os.path.exists(props_path):
+        raise ValueError('server.properties 文件不存在')
+    with open(props_path, 'r', encoding='utf-8', errors='ignore') as f:
+        content = f.read()
+    return _parse_date_from_content(content)
 
 
 def scan_map_sizes(server_folder: str, date: str,
@@ -132,80 +134,12 @@ def should_include_player(player_name: str, play_time_seconds: int,
     return False
 
 
-def parse_all_stats(stats_folder: str):
-    import json as _json
-    from pathlib import Path
-
-    player_stats = {}
-    all_details = {'battle': {}, 'craft': {}, 'item': {}, 'block': {}}
-    stats_path = Path(stats_folder)
-
-    if not stats_path.exists():
-        return player_stats, all_details
-
-    for stat_file in stats_path.glob('*.json'):
-        player_uuid = stat_file.stem
-        try:
-            with open(stat_file, 'r', encoding='utf-8') as f:
-                data = _json.load(f)
-
-            stats = data.get('stats', {})
-            custom = stats.get('minecraft:custom', {})
-            player_data = {
-                'play_time': custom.get('minecraft:play_time', 0) // 20,
-                'deaths': custom.get('minecraft:deaths', 0),
-                'mob_kills': custom.get('minecraft:mob_kills', 0),
-                'player_kills': custom.get('minecraft:player_kills', 0),
-                'damage_dealt': custom.get('minecraft:damage_dealt', 0),
-                'damage_taken': custom.get('minecraft:damage_taken', 0),
-                'distance_walked': custom.get('minecraft:walk_one_cm', 0) // 100,
-                'jumps': custom.get('minecraft:jump', 0),
-                'sprint_one_cm': custom.get('minecraft:sprint_one_cm', 0),
-                'walk_one_cm': custom.get('minecraft:walk_one_cm', 0),
-                'fly_one_cm': custom.get('minecraft:fly_one_cm', 0),
-                'climb_one_cm': custom.get('minecraft:climb_one_cm', 0),
-                'swim_one_cm': custom.get('minecraft:swim_one_cm', 0),
-                'horse_one_cm': custom.get('minecraft:horse_one_cm', 0),
-                'boat_one_cm': custom.get('minecraft:boat_one_cm', 0),
-                'aviate_one_cm': custom.get('minecraft:aviate_one_cm', 0),
-                'fall_one_cm': custom.get('minecraft:fall_one_cm', 0),
-                'sleep_in_bed': custom.get('minecraft:sleep_in_bed', 0),
-                'fish_caught': custom.get('minecraft:fish_caught', 0),
-                'animals_bred': custom.get('minecraft:animals_bred', 0),
-                'traded_with_villager': custom.get('minecraft:traded_with_villager', 0),
-                'talked_to_villager': custom.get('minecraft:talked_to_villager', 0),
-                'enchant_item': custom.get('minecraft:enchant_item', 0),
-                'interact_with_crafting_table': custom.get('minecraft:interact_with_crafting_table', 0),
-                'interact_with_furnace': custom.get('minecraft:interact_with_furnace', 0),
-                'interact_with_anvil': custom.get('minecraft:interact_with_anvil', 0),
-                'open_chest': custom.get('minecraft:open_chest', 0),
-                'bell_ring': custom.get('minecraft:bell_ring', 0),
-                'drop_count': custom.get('minecraft:drop', 0),
-                'eat_cake_slice': custom.get('minecraft:eat_cake_slice', 0),
-                'sneak_time': custom.get('minecraft:sneak_time', 0) // 20,
-                'leave_game': custom.get('minecraft:leave_game', 0),
-            }
-            player_stats[player_uuid] = player_data
-
-            for domain, categories in DOMAIN_CATEGORIES.items():
-                player_detail = {}
-                for category_key, category_name in categories.items():
-                    category_data = stats.get(category_name, {})
-                    for item_key, count in category_data.items():
-                        simplified_key = item_key.replace('minecraft:', '')
-                        player_detail[f"{category_key}:{simplified_key}"] = count
-                if player_detail:
-                    all_details[domain][player_uuid] = player_detail
-
-        except Exception as e:
-            print(f"Error parsing {stat_file}: {e}")
-
-    return player_stats, all_details
-
-
 def scan_server_folder(server_folder: str, date: str = None,
                        filter_config: dict = None,
-                       conn: Optional[sqlite3.Connection] = None) -> dict:
+                       conn: Optional[sqlite3.Connection] = None,
+                       map_sizes_override: list = None,
+                       usercache_override: dict = None,
+                       stats_contents_override: dict = None) -> dict:
     if filter_config is None:
         filter_config = {}
 
@@ -216,12 +150,26 @@ def scan_server_folder(server_folder: str, date: str = None,
     if own_conn:
         conn = get_connection()
 
-    uuid_to_name = load_usercache(server_folder)
+    if usercache_override is not None:
+        uuid_to_name = usercache_override
+    else:
+        uuid_to_name = load_usercache(server_folder)
 
-    map_data = scan_map_sizes(server_folder, date, conn)
+    if map_sizes_override is not None:
+        map_data = map_sizes_override
+        for ms in map_data:
+            MapSizeRepository.insert_or_replace(date, ms['name'], ms['size'], conn)
+    else:
+        map_data = scan_map_sizes(server_folder, date, conn)
 
-    stats_folder = os.path.join(server_folder, 'world', 'players', 'stats')
-    player_stats, all_details = parse_all_stats(stats_folder)
+    if stats_contents_override is not None:
+        player_stats, all_details = parse_all_stats_from_contents(stats_contents_override)
+    else:
+        stats_folder = os.path.join(server_folder, 'world', 'players', 'stats')
+        if not os.path.exists(stats_folder):
+            stats_folder = os.path.join(server_folder, 'world', 'stats')
+        player_stats, all_details = parse_all_stats(stats_folder)
+
     total_players = len(player_stats)
     filtered_count = 0
 
@@ -368,16 +316,40 @@ def batch_scan_parent_folder(parent_folder: str,
 def scan_archive(archive_path: str, date: str = None,
                  filter_config: dict = None,
                  conn: Optional[sqlite3.Connection] = None) -> dict:
-    extractor = ArchiveTempExtractor()
-    try:
-        server_folder = extractor.extract(archive_path)
-        if not os.path.exists(os.path.join(server_folder, 'world')):
-            raise ValueError('压缩包内未找到 world 目录，无法识别为有效的服务器备份')
-        result = scan_server_folder(server_folder, date=date,
-                                    filter_config=filter_config, conn=conn)
-        return result
-    finally:
-        extractor.cleanup()
+    reader = ArchiveReader(archive_path)
+    for _ in reader.read_needed_gen():
+        pass
+
+    data = reader.needed_data
+    if not data or not data.get('server_properties'):
+        raise ValueError('压缩包内未找到 server.properties')
+
+    if date is None:
+        try:
+            date = _parse_date_from_content(data['server_properties'])
+        except ValueError:
+            try:
+                date = parse_date_from_folder_name(os.path.basename(archive_path))
+            except ValueError:
+                mtime = os.path.getmtime(archive_path)
+                date = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d')
+
+    uuid_to_name = {}
+    if data.get('usercache'):
+        uuid_to_name = load_usercache_from_content(data['usercache'])
+
+    map_sizes = reader.compute_map_sizes()
+
+    stats_contents = data.get('stats', {})
+
+    result = scan_server_folder(
+        '', date=date, filter_config=filter_config, conn=conn,
+        map_sizes_override=map_sizes,
+        usercache_override=uuid_to_name,
+        stats_contents_override=stats_contents,
+    )
+
+    return result
 
 
 def _collect_scannable_items(parent_folder: str):
@@ -406,8 +378,6 @@ def _collect_scannable_items(parent_folder: str):
 
 
 def _resolve_item_date(item: dict):
-    from backend.services.archiver import ArchiveTempExtractor
-
     if item['type'] == 'folder':
         try:
             date = parse_date_from_server_properties(item['path'])
@@ -419,20 +389,21 @@ def _resolve_item_date(item: dict):
                 date = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d')
         return date
     else:
-        extractor = ArchiveTempExtractor()
+        reader = ArchiveReader(item['path'])
         try:
-            server_folder = extractor.extract(item['path'])
-            try:
-                date = parse_date_from_server_properties(server_folder)
-            except ValueError:
+            props_content = reader.read_file_text('server.properties')
+            if props_content:
                 try:
-                    date = parse_date_from_folder_name(item['name'])
+                    return _parse_date_from_content(props_content)
                 except ValueError:
-                    mtime = os.path.getmtime(item['path'])
-                    date = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d')
-            return date
+                    pass
+            try:
+                return parse_date_from_folder_name(item['name'])
+            except ValueError:
+                mtime = os.path.getmtime(item['path'])
+                return datetime.fromtimestamp(mtime).strftime('%Y-%m-%d')
         finally:
-            extractor.cleanup()
+            pass
 
 
 def batch_scan_parent_folder_v2(parent_folder: str,
@@ -444,27 +415,15 @@ def batch_scan_parent_folder_v2(parent_folder: str,
         items = _collect_scannable_items(parent_folder)
 
         for item in items:
-            extractor = None
             try:
                 if item['type'] == 'archive':
-                    extractor = ArchiveTempExtractor()
-                    server_folder = extractor.extract(item['path'])
+                    scan_result = scan_archive(item['path'], filter_config=filter_config)
                 else:
-                    server_folder = item['path']
+                    date = _resolve_item_date(item)
+                    scan_result = scan_server_folder(item['path'], date,
+                                                     filter_config=filter_config)
 
-                date = _resolve_item_date(item) if item['type'] == 'folder' else None
-                if date is None:
-                    try:
-                        date = parse_date_from_server_properties(server_folder)
-                    except ValueError:
-                        try:
-                            date = parse_date_from_folder_name(item['name'])
-                        except ValueError:
-                            mtime = os.path.getmtime(item['path'])
-                            date = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d')
-
-                scan_result = scan_server_folder(server_folder, date,
-                                                 filter_config=filter_config)
+                date = scan_result['date']
                 result_entry = {
                     'folder': item['name'],
                     'date': date,
@@ -479,9 +438,6 @@ def batch_scan_parent_folder_v2(parent_folder: str,
                 results.append(result_entry)
             except Exception as e:
                 errors.append({'folder': item['name'], 'error': str(e)})
-            finally:
-                if extractor:
-                    extractor.cleanup()
 
         total_filtered = sum(r.get('filtered_count', 0) for r in results)
         total_players_all = sum(r.get('total_players', r.get('player_count', 0)) for r in results)
