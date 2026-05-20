@@ -39,6 +39,13 @@ const props = withDefaults(defineProps<{
 const app = useAppStore()
 const { t } = useI18n()
 
+function hexToRgba(hex: string, alpha: number) {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return `rgba(${r},${g},${b},${alpha})`
+}
+
 const isEmpty = computed(() => {
   if (props.series.length === 0) return true
   return props.series.every(s => !s.data || s.data.length === 0)
@@ -54,6 +61,7 @@ const option = computed(() => {
   const isArea = props.chartType === 'line'
   const dark = app.isDark
   const maxSeries = app.maxLegendPlayers
+  const brandColor = app.currentTheme.primary
 
   const limitedSeries = props.series.slice(0, maxSeries)
   const useScrollLegend = limitedSeries.length > 5
@@ -120,11 +128,14 @@ const option = computed(() => {
     tooltip: {
       trigger: 'axis',
       axisPointer: {
-        type: 'line',
+        type: props.chartType === 'bar' ? 'shadow' : 'line',
         lineStyle: { color: '#d1ddd1', type: 'dashed' },
+        shadowStyle: {
+          color: hexToRgba(brandColor, dark ? 0.15 : 0.12),
+        },
       },
       backgroundColor: dark ? 'rgba(30,41,59,0.95)' : 'rgba(255,255,255,0.95)',
-      borderColor: dark ? 'rgba(119,153,119,0.3)' : 'rgba(119,153,119,0.2)',
+      borderColor: hexToRgba(brandColor, dark ? 0.3 : 0.2),
       borderWidth: 1,
       padding: [12, 16],
       textStyle: { color: dark ? '#e2e8f0' : '#334155', fontSize: 12 },
@@ -183,7 +194,7 @@ const option = computed(() => {
         axisLine: { show: false },
         axisTick: { show: false },
         axisLabel: { color: dark ? '#64748b' : '#94a3b8', fontSize: 12 },
-        splitLine: { lineStyle: { color: dark ? '#1e3a1e' : '#d1ddd1', type: 'dashed' } },
+        splitLine: { lineStyle: { color: dark ? hexToRgba(brandColor, 0.15) : '#d1ddd1', type: 'dashed' } },
       },
       {
         type: 'value',
