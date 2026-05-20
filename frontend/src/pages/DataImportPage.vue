@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { apiPost, apiDelete, apiGet, consumeSSE } from '@/services/api'
 import { useDataStore } from '@/stores/data'
 import { useAppStore } from '@/stores/app'
-import { Upload, Trash2, Database, Loader2, FolderOpen, Calendar, Play, HardDrive, ArrowLeft, Folder, Lock } from 'lucide-vue-next'
+import { Upload, Trash2, Database, Loader2, FolderOpen, Calendar, Play, HardDrive, ArrowLeft, Folder, Lock, FileArchive } from 'lucide-vue-next'
 import DatePickerPopup from '@/components/DatePickerPopup.vue'
 
 const { t } = useI18n()
@@ -14,6 +14,8 @@ const app = useAppStore()
 const activeTab = ref<'import' | 'delete'>('import')
 
 const scanFolder = ref('')
+const scanArchive = ref('')
+const scanMode = ref<'folder' | 'archive'>('folder')
 const scanDate = ref('')
 const scanLoading = ref(false)
 const scanResult = ref<any>(null)
@@ -130,13 +132,22 @@ async function refreshAllData() {
 }
 
 async function handleScan() {
-  if (!scanFolder.value.trim()) return
+  if (scanMode.value === 'folder' && !scanFolder.value.trim()) return
+  if (scanMode.value === 'archive' && !scanArchive.value.trim()) return
   scanLoading.value = true; scanResult.value = null; scanError.value = ''
   globalLoading.value = true; globalLoadingText.value = t('dataManage.singleScan'); progressTotal.value = 0
   try {
-    const body: Record<string, any> = { folder: scanFolder.value.trim(), filter_config: getFilterConfig() }
-    if (scanDate.value) body.date = scanDate.value
-    scanResult.value = await apiPost('/api/scan', body)
+    const filterConfig = getFilterConfig()
+    const date = scanDate.value || undefined
+    if (scanMode.value === 'folder') {
+      const body: Record<string, any> = { folder: scanFolder.value.trim(), filter_config: filterConfig }
+      if (date) body.date = date
+      scanResult.value = await apiPost('/api/scan', body)
+    } else {
+      const body: Record<string, any> = { archive: scanArchive.value.trim(), filter_config: filterConfig }
+      if (date) body.date = date
+      scanResult.value = await apiPost('/api/scan_archive', body)
+    }
     globalLoading.value = false
     await refreshAllData()
   } catch (e: any) { scanError.value = e.message || t('dataManage.operationFailed') }
@@ -278,16 +289,20 @@ function handleRangeClear() {
 
 const showFolderBrowser = ref(false)
 const folderBrowserTarget = ref<'scan' | 'batch'>('scan')
+const folderBrowserMode = ref<'folder' | 'archive'>('folder')
 const folderBrowserPath = ref('')
 const folderBrowserParent = ref('')
 const folderBrowserDirs = ref<{name: string; path: string; accessible: boolean}[]>([])
+const folderBrowserArchives = ref<{name: string; path: string}[]>([])
 const folderBrowserIsRoot = ref(false)
 const folderBrowserLoading = ref(false)
 const folderBrowserError = ref('')
 
 async function openFolderBrowser(target: 'scan' | 'batch') {
   folderBrowserTarget.value = target
+  folderBrowserMode.value = (target === 'scan' && scanMode.value === 'archive') ? 'archive' : 'folder'
   folderBrowserError.value = ''
+  folderBrowserArchives.value = []
   showFolderBrowser.value = true
   await browseTo('')
 }
@@ -307,6 +322,7 @@ async function browseTo(path: string) {
     } else {
       folderBrowserDirs.value = data.dirs
     }
+    folderBrowserArchives.value = data.archives || []
   } catch (e: any) {
     folderBrowserError.value = e.message || t('dataManage.operationFailed')
   } finally {
@@ -315,8 +331,22 @@ async function browseTo(path: string) {
 }
 
 function selectFolderAndClose() {
-  if (folderBrowserTarget.value === 'scan') scanFolder.value = folderBrowserPath.value
-  else batchFolder.value = folderBrowserPath.value
+  if (folderBrowserTarget.value === 'scan') {
+    if (folderBrowserMode.value === 'archive') {
+      scanArchive.value = ''
+    } else {
+      scanFolder.value = folderBrowserPath.value
+    }
+  } else {
+    batchFolder.value = folderBrowserPath.value
+  }
+  showFolderBrowser.value = false
+}
+
+function selectArchiveAndClose(archivePath: string) {
+  if (folderBrowserTarget.value === 'scan') {
+    scanArchive.value = archivePath
+  }
   showFolderBrowser.value = false
 }
 </script>
@@ -347,7 +377,26 @@ function selectFolderAndClose() {
         </div>
 
         <div class="space-y-4">
-          <div>
+          <div class="flex items-center gap-3">
+            <button
+              class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all"
+              :class="scanMode === 'folder' ? 'bg-brand/10 dark:bg-brand/20 text-brand dark:text-brand-light' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'"
+              @click="scanMode = 'folder'"
+            >
+              <Folder class="w-4 h-4" />
+              {{ t('dataManage.folderMode') }}
+            </button>
+            <button
+              class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all"
+              :class="scanMode === 'archive' ? 'bg-brand/10 dark:bg-brand/20 text-brand dark:text-brand-light' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'"
+              @click="scanMode = 'archive'"
+            >
+              <FileArchive class="w-4 h-4" />
+              {{ t('dataManage.archiveMode') }}
+            </button>
+          </div>
+
+          <div v-if="scanMode === 'folder'">
             <label class="block mb-2 text-sm font-medium text-slate-600 dark:text-slate-400">{{ t('dataManage.serverFolder') }}</label>
             <div class="flex gap-2">
               <input v-model="scanFolder" type="text" :placeholder="t('dataManage.folderPlaceholder')" class="flex-1 px-4 py-3 bg-white/80 dark:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-xl text-sm dark:text-slate-200 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand/40 transition-all" />
@@ -355,6 +404,16 @@ function selectFolderAndClose() {
                 <FolderOpen class="w-4 h-4" />
               </button>
             </div>
+          </div>
+          <div v-else>
+            <label class="block mb-2 text-sm font-medium text-slate-600 dark:text-slate-400">{{ t('dataManage.archivePath') }}</label>
+            <div class="flex gap-2">
+              <input v-model="scanArchive" type="text" :placeholder="t('dataManage.archivePlaceholder')" class="flex-1 px-4 py-3 bg-white/80 dark:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-xl text-sm dark:text-slate-200 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand/40 transition-all" />
+              <button class="px-4 py-3 bg-brand/10 dark:bg-brand/20 hover:bg-brand/20 text-brand dark:text-brand-light rounded-xl transition-all flex items-center gap-2" @click="openFolderBrowser('scan')">
+                <FolderOpen class="w-4 h-4" />
+              </button>
+            </div>
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('dataManage.archiveHint') }}</p>
           </div>
           <div>
             <label class="block mb-2 text-sm font-medium text-slate-600 dark:text-slate-400">{{ t('dataManage.scanDate') }}</label>
@@ -373,7 +432,7 @@ function selectFolderAndClose() {
           </div>
           <button
             class="btn-brand inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium transition-all"
-            :disabled="scanLoading || !scanFolder.trim()"
+            :disabled="scanLoading || (scanMode === 'folder' ? !scanFolder.trim() : !scanArchive.trim())"
             @click="handleScan"
           >
             <Loader2 v-if="scanLoading" class="w-4 h-4 animate-spin" />
@@ -414,7 +473,7 @@ function selectFolderAndClose() {
               </button>
             </div>
           </div>
-          <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('dataManage.batchHint') }}</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('dataManage.batchHintV2') }}</p>
           <button
             class="btn-brand inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium transition-all"
             :disabled="batchLoading || !batchFolder.trim()"
@@ -577,7 +636,9 @@ function selectFolderAndClose() {
               <div class="w-10 h-10 bg-gradient-to-br from-brand/20 dark:from-brand/20 to-brand/10 dark:to-brand/15 rounded-xl flex items-center justify-center">
                 <HardDrive class="w-5 h-5 text-brand dark:text-brand-light" />
               </div>
-              <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">{{ t('dataManage.selectFolder') }}</h3>
+              <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">
+                {{ folderBrowserMode === 'archive' ? t('dataManage.selectArchive') : t('dataManage.selectFolder') }}
+              </h3>
             </div>
             <button class="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-all text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" @click="showFolderBrowser = false">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -613,12 +674,27 @@ function selectFolderAndClose() {
               <Folder v-else class="w-4 h-4 text-brand/60 dark:text-brand-light/60" />
               <span>{{ dir.name }}</span>
             </button>
+            <button
+              v-if="folderBrowserMode === 'archive'"
+              v-for="archive in folderBrowserArchives"
+              :key="archive.path"
+              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-brand/5 dark:hover:bg-brand/10 hover:text-brand dark:hover:text-brand-light transition-all"
+              @click="selectArchiveAndClose(archive.path)"
+            >
+              <FileArchive class="w-4 h-4 text-amber-500 dark:text-amber-400" />
+              <span>{{ archive.name }}</span>
+            </button>
           </div>
 
-          <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center justify-end">
+          <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
+            <div v-if="folderBrowserMode === 'archive' && folderBrowserArchives.length > 0" class="text-xs text-slate-400 dark:text-slate-500">
+              {{ t('dataManage.archiveCount', { n: folderBrowserArchives.length }) }}
+            </div>
+            <div v-else></div>
             <div class="flex gap-2">
               <button class="px-4 py-2 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-all" @click="showFolderBrowser = false">{{ t('dataManage.cancel') }}</button>
               <button
+                v-if="folderBrowserMode === 'folder'"
                 class="btn-brand px-4 py-2 text-sm rounded-lg transition-all"
                 :disabled="!folderBrowserPath || folderBrowserIsRoot"
                 @click="selectFolderAndClose"

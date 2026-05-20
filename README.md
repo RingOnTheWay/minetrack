@@ -197,6 +197,80 @@ uv run python scripts/export_data.py
 
 **player\_stats 支持的 type 参数：** `play_time`, `deaths`, `mob_kills`, `player_kills`, `jumps`, `damage_dealt`, `distance_walked`, `sprint_one_cm`, `walk_one_cm`, `fly_one_cm`, `climb_one_cm`, `swim_one_cm`, `horse_one_cm`, `boat_one_cm`, `aviate_one_cm`, `fall_one_cm`
 
+## 服务器自动导入
+
+服务器停止时自动触发数据导入，无需手动操作。
+
+### 配置方法
+
+在服务器的 `run.bat` 中添加以下代码片段：
+
+**1. 配置变量**（粘贴在 `@echo off` 之后）
+
+```bat
+REM === MineTrack Auto Import Config ===
+set MINETRACK_FOLDER=D:\Downloads\Server\Backup\stat
+REM === End Config ===
+```
+
+> 将 `MINETRACK_FOLDER` 修改为你的 MineTrack 项目实际路径。
+
+**2. 自动导入调用**（粘贴在 `echo Server stopped.` 之后、`choice` 之前）
+
+```bat
+REM === MineTrack Auto Import ===
+echo [MineTrack] Importing data...
+cd /d "%MINETRACK_FOLDER%"
+uv run python scripts/auto_import.py "%~dp0."
+cd /d "%~dp0"
+REM === End MineTrack Auto Import ===
+```
+
+### 完整示例
+
+```bat
+@echo off
+REM === MineTrack Auto Import Config ===
+set MINETRACK_FOLDER=D:\Downloads\Server\Backup\stat
+REM === End Config ===
+
+:start
+echo Starting Minecraft server...
+java.exe -Xms2G -Xmx4G -jar purpur-26.1.2-2575.jar nogui
+
+echo.
+echo Server stopped.
+REM === MineTrack Auto Import ===
+echo [MineTrack] Importing data...
+cd /d "%MINETRACK_FOLDER%"
+uv run python scripts/auto_import.py "%~dp0."
+cd /d "%~dp0"
+REM === End MineTrack Auto Import ===
+
+choice /C RN /M "Press R to restart, N to exit"
+if errorlevel 2 goto exit
+if errorlevel 1 goto start
+
+:exit
+echo Exiting...
+```
+
+### 工作原理
+
+1. 服务器停止后自动触发数据导入
+2. 导入日期自动取服务器停止时的当前日期
+3. 优先通过 API 导入（需 MineTrack 后端运行），失败则回退到 Python 直接调用
+4. 不修改服务器文件夹中的任何文件
+
+### 命令行手动调用
+
+```bash
+uv run python scripts/auto_import.py <server_folder> [date]
+```
+
+- `server_folder`：服务器文件夹路径
+- `date`：可选，导入日期（YYYY-MM-DD），不传则使用当前日期
+
 ## 数据导出
 
 ```bash
@@ -288,7 +362,8 @@ stat/
 │   ├── zh-CN.json
 │   └── en-US.json
 ├── scripts/
-│   └── export_data.py                 # 数据导出脚本
+│   ├── auto_import.py               # 服务器停止自动导入脚本
+│   └── export_data.py               # 数据导出脚本
 ├── assets/
 │   └── icon.png
 ├── minetrack.db                       # SQLite 数据库

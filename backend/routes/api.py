@@ -14,7 +14,8 @@ from backend.database.repositories import (
     PlayerStatsRepository,
     DetailStatsRepository,
 )
-from backend.services.scanner import scan_server_folder, batch_scan_parent_folder
+from backend.services.scanner import scan_server_folder, batch_scan_parent_folder, scan_archive, batch_scan_parent_folder_v2, _collect_scannable_items, _resolve_item_date
+from backend.services.archiver import is_archive_file, ARCHIVE_EXTENSIONS
 
 api_bp = Blueprint('api', __name__)
 
@@ -44,15 +45,18 @@ def browse_directory():
             if path == '/':
                 parent = ''
         entries = []
+        archives = []
         for name in sorted(os.listdir(path)):
             full = os.path.join(path, name)
             if os.path.isdir(full):
                 try:
                     os.listdir(full)
-                    entries.append({'name': name, 'path': full, 'accessible': True})
+                    entries.append({'name': name, 'path': full, 'accessible': True, 'type': 'folder'})
                 except PermissionError:
-                    entries.append({'name': name, 'path': full, 'accessible': False})
-        return jsonify({'path': path, 'parent': parent, 'dirs': entries, 'is_root': False})
+                    entries.append({'name': name, 'path': full, 'accessible': False, 'type': 'folder'})
+            elif os.path.isfile(full) and is_archive_file(full):
+                archives.append({'name': name, 'path': full, 'accessible': True, 'type': 'archive'})
+        return jsonify({'path': path, 'parent': parent, 'dirs': entries, 'archives': archives, 'is_root': False})
     except PermissionError:
         return jsonify({'error': '无权限访问'}), 403
     except Exception as e:
@@ -75,6 +79,45 @@ def scan_data():
             if not re.match(r'^\d{4}-\d{2}-\d{2}$', date):
                 return jsonify({'error': '日期格式无效，需为 YYYY-MM-DD'}), 400
         result = scan_server_folder(server_folder, date=date, filter_config=filter_config)
+        response = {
+            'success': True,
+            'date': result['date'],
+            'maps': result['maps'],
+            'player_count': result['player_count'],
+            'battle_stats_count': result['battle_stats_count'],
+            'craft_stats_count': result['craft_stats_count'],
+            'item_stats_count': result['item_stats_count'],
+            'block_stats_count': result.get('block_stats_count', 0),
+        }
+        if result.get('filtered_count', 0) > 0:
+            response['filtered_count'] = result['filtered_count']
+            response['total_players'] = result['total_players']
+        return jsonify(response)
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@api_bp.route('/api/scan_archive', methods=['POST'])
+def scan_archive_data():
+    data = request.json
+    archive_path = data.get('archive')
+
+    if not archive_path or not os.path.exists(archive_path):
+        return jsonify({'error': '压缩包文件不存在'}), 400
+
+    if not is_archive_file(archive_path):
+        return jsonify({'error': '不支持的压缩包格式'}), 400
+
+    try:
+        filter_config = data.get('filter_config', {})
+        date = data.get('date') or None
+        if date:
+            import re
+            if not re.match(r'^\d{4}-\d{2}-\d{2}$', date):
+                return jsonify({'error': '日期格式无效，需为 YYYY-MM-DD'}), 400
+        result = scan_archive(archive_path, date=date, filter_config=filter_config)
         response = {
             'success': True,
             'date': result['date'],
@@ -310,23 +353,15 @@ def list_scannable():
     from backend.services.scanner import parse_date_from_server_properties, parse_date_from_folder_name
     from datetime import datetime
 
+    items = _collect_scannable_items(parent_folder)
     folders = []
-    for item in sorted(os.listdir(parent_folder)):
-        item_path = os.path.join(parent_folder, item)
-        if not os.path.isdir(item_path):
-            continue
-        world_path = os.path.join(item_path, 'world')
-        if not os.path.exists(world_path):
-            continue
+    for item in items:
         try:
-            date = parse_date_from_server_properties(item_path)
-        except ValueError:
-            try:
-                date = parse_date_from_folder_name(item)
-            except ValueError:
-                mtime = os.path.getmtime(item_path)
-                date = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d')
-        folders.append({'folder': item_path, 'date': date})
+            date = _resolve_item_date(item)
+        except Exception:
+            mtime = os.path.getmtime(item['path'])
+            date = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d')
+        folders.append({'folder': item['path'], 'date': date, 'name': item['name'], 'type': item['type']})
 
     return jsonify({'folders': folders, 'total': len(folders)})
 
@@ -342,24 +377,17 @@ def batch_scan_stream():
         return jsonify({'error': '父文件夹不存在'}), 400
 
     from backend.services.scanner import parse_date_from_server_properties, parse_date_from_folder_name
+    from backend.services.archiver import ArchiveTempExtractor
 
+    items = _collect_scannable_items(parent_folder)
     folders = []
-    for item in sorted(os.listdir(parent_folder)):
-        item_path = os.path.join(parent_folder, item)
-        if not os.path.isdir(item_path):
-            continue
-        world_path = os.path.join(item_path, 'world')
-        if not os.path.exists(world_path):
-            continue
+    for item in items:
         try:
-            date = parse_date_from_server_properties(item_path)
-        except ValueError:
-            try:
-                date = parse_date_from_folder_name(item)
-            except ValueError:
-                mtime = os.path.getmtime(item_path)
-                date = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d')
-        folders.append({'folder': item_path, 'date': date, 'name': item})
+            date = _resolve_item_date(item)
+        except Exception:
+            mtime = os.path.getmtime(item['path'])
+            date = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d')
+        folders.append({'folder': item['path'], 'date': date, 'name': item['name'], 'type': item['type']})
 
     filter_config = data.get('filter_config', {})
 
@@ -374,8 +402,15 @@ def batch_scan_stream():
 
         for i, item in enumerate(folders):
             yield f"data: {_json.dumps({'type': 'progress', 'current': i + 1, 'total': total, 'name': item['name']})}\n\n"
+            extractor = None
             try:
-                result = scan_server_folder(item['folder'], date=item['date'], filter_config=filter_config, conn=conn)
+                if item['type'] == 'archive':
+                    extractor = ArchiveTempExtractor()
+                    server_folder = extractor.extract(item['folder'])
+                else:
+                    server_folder = item['folder']
+
+                result = scan_server_folder(server_folder, date=item['date'], filter_config=filter_config, conn=conn)
                 if result.get('filtered_count', 0) > 0:
                     filtered_count += result['filtered_count']
                 imported += 1
@@ -383,6 +418,9 @@ def batch_scan_stream():
                     conn.commit()
             except Exception as e:
                 errors.append({'folder': item['name'], 'error': str(e)})
+            finally:
+                if extractor:
+                    extractor.cleanup()
 
         conn.close()
 

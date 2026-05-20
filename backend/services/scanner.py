@@ -21,6 +21,10 @@ from backend.services.parser import (
     parse_block_stats,
     DOMAIN_CATEGORIES,
 )
+from backend.services.archiver import (
+    is_archive_file,
+    ArchiveTempExtractor,
+)
 
 
 def get_folder_size(folder_path: str) -> float:
@@ -338,6 +342,146 @@ def batch_scan_parent_folder(parent_folder: str,
                 results.append(result_entry)
             except Exception as e:
                 errors.append({'folder': folder_name, 'error': str(e)})
+
+        total_filtered = sum(r.get('filtered_count', 0) for r in results)
+        total_players_all = sum(r.get('total_players', r.get('player_count', 0)) for r in results)
+
+        response = {
+            'success': True,
+            'total': len(results) + len(errors),
+            'imported': len(results),
+            'failed': len(errors),
+            'results': results,
+            'errors': errors,
+        }
+
+        if total_filtered > 0:
+            response['filtered_count'] = total_filtered
+            response['total_players'] = total_players_all
+
+        return response
+
+    except Exception as e:
+        return {'error': str(e)}
+
+
+def scan_archive(archive_path: str, date: str = None,
+                 filter_config: dict = None,
+                 conn: Optional[sqlite3.Connection] = None) -> dict:
+    extractor = ArchiveTempExtractor()
+    try:
+        server_folder = extractor.extract(archive_path)
+        if not os.path.exists(os.path.join(server_folder, 'world')):
+            raise ValueError('压缩包内未找到 world 目录，无法识别为有效的服务器备份')
+        result = scan_server_folder(server_folder, date=date,
+                                    filter_config=filter_config, conn=conn)
+        return result
+    finally:
+        extractor.cleanup()
+
+
+def _collect_scannable_items(parent_folder: str):
+    from backend.services.archiver import get_archive_extension
+
+    items = []
+    for item_name in sorted(os.listdir(parent_folder)):
+        item_path = os.path.join(parent_folder, item_name)
+
+        if os.path.isdir(item_path):
+            world_path = os.path.join(item_path, 'world')
+            if os.path.exists(world_path):
+                items.append({
+                    'type': 'folder',
+                    'name': item_name,
+                    'path': item_path,
+                })
+        elif os.path.isfile(item_path) and is_archive_file(item_path):
+            items.append({
+                'type': 'archive',
+                'name': item_name,
+                'path': item_path,
+            })
+
+    return items
+
+
+def _resolve_item_date(item: dict):
+    from backend.services.archiver import ArchiveTempExtractor
+
+    if item['type'] == 'folder':
+        try:
+            date = parse_date_from_server_properties(item['path'])
+        except ValueError:
+            try:
+                date = parse_date_from_folder_name(item['name'])
+            except ValueError:
+                mtime = os.path.getmtime(item['path'])
+                date = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d')
+        return date
+    else:
+        extractor = ArchiveTempExtractor()
+        try:
+            server_folder = extractor.extract(item['path'])
+            try:
+                date = parse_date_from_server_properties(server_folder)
+            except ValueError:
+                try:
+                    date = parse_date_from_folder_name(item['name'])
+                except ValueError:
+                    mtime = os.path.getmtime(item['path'])
+                    date = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d')
+            return date
+        finally:
+            extractor.cleanup()
+
+
+def batch_scan_parent_folder_v2(parent_folder: str,
+                                 filter_config: dict = None) -> dict:
+    results = []
+    errors = []
+
+    try:
+        items = _collect_scannable_items(parent_folder)
+
+        for item in items:
+            extractor = None
+            try:
+                if item['type'] == 'archive':
+                    extractor = ArchiveTempExtractor()
+                    server_folder = extractor.extract(item['path'])
+                else:
+                    server_folder = item['path']
+
+                date = _resolve_item_date(item) if item['type'] == 'folder' else None
+                if date is None:
+                    try:
+                        date = parse_date_from_server_properties(server_folder)
+                    except ValueError:
+                        try:
+                            date = parse_date_from_folder_name(item['name'])
+                        except ValueError:
+                            mtime = os.path.getmtime(item['path'])
+                            date = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d')
+
+                scan_result = scan_server_folder(server_folder, date,
+                                                 filter_config=filter_config)
+                result_entry = {
+                    'folder': item['name'],
+                    'date': date,
+                    'success': True,
+                    'type': item['type'],
+                    'maps': scan_result['maps'],
+                    'player_count': scan_result['player_count'],
+                }
+                if scan_result.get('filtered_count', 0) > 0:
+                    result_entry['filtered_count'] = scan_result['filtered_count']
+                    result_entry['total_players'] = scan_result['total_players']
+                results.append(result_entry)
+            except Exception as e:
+                errors.append({'folder': item['name'], 'error': str(e)})
+            finally:
+                if extractor:
+                    extractor.cleanup()
 
         total_filtered = sum(r.get('filtered_count', 0) for r in results)
         total_players_all = sum(r.get('total_players', r.get('player_count', 0)) for r in results)

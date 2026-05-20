@@ -197,6 +197,80 @@ Deploy `frontend/dist/` to GitHub Pages.
 
 **player\_stats supported type values:** `play_time`, `deaths`, `mob_kills`, `player_kills`, `jumps`, `damage_dealt`, `distance_walked`, `sprint_one_cm`, `walk_one_cm`, `fly_one_cm`, `climb_one_cm`, `swim_one_cm`, `horse_one_cm`, `boat_one_cm`, `aviate_one_cm`, `fall_one_cm`
 
+## Auto Import on Server Stop
+
+Automatically trigger data import when the Minecraft server stops.
+
+### Configuration
+
+Add the following code snippets to your server's `run.bat`:
+
+**1. Config variables** (paste after `@echo off`)
+
+```bat
+REM === MineTrack Auto Import Config ===
+set MINETRACK_FOLDER=D:\Downloads\Server\Backup\stat
+REM === End Config ===
+```
+
+> Change `MINETRACK_FOLDER` to your actual MineTrack project path.
+
+**2. Auto import call** (paste after `echo Server stopped.`, before `choice`)
+
+```bat
+REM === MineTrack Auto Import ===
+echo [MineTrack] Importing data...
+cd /d "%MINETRACK_FOLDER%"
+uv run python scripts/auto_import.py "%~dp0."
+cd /d "%~dp0"
+REM === End MineTrack Auto Import ===
+```
+
+### Full Example
+
+```bat
+@echo off
+REM === MineTrack Auto Import Config ===
+set MINETRACK_FOLDER=D:\Downloads\Server\Backup\stat
+REM === End Config ===
+
+:start
+echo Starting Minecraft server...
+java.exe -Xms2G -Xmx4G -jar purpur-26.1.2-2575.jar nogui
+
+echo.
+echo Server stopped.
+REM === MineTrack Auto Import ===
+echo [MineTrack] Importing data...
+cd /d "%MINETRACK_FOLDER%"
+uv run python scripts/auto_import.py "%~dp0."
+cd /d "%~dp0"
+REM === End MineTrack Auto Import ===
+
+choice /C RN /M "Press R to restart, N to exit"
+if errorlevel 2 goto exit
+if errorlevel 1 goto start
+
+:exit
+echo Exiting...
+```
+
+### How It Works
+
+1. Data import is automatically triggered when the server stops
+2. The import date defaults to the current date at server stop time
+3. Tries API import first (requires MineTrack backend running), falls back to direct Python call on failure
+4. Does not modify any files in the server folder
+
+### Manual Command Line
+
+```bash
+uv run python scripts/auto_import.py <server_folder> [date]
+```
+
+- `server_folder`: Path to the server folder
+- `date`: Optional, import date (YYYY-MM-DD). Defaults to current date if omitted
+
 ## Data Export
 
 ```bash
@@ -288,7 +362,8 @@ stat/
 │   ├── zh-CN.json
 │   └── en-US.json
 ├── scripts/
-│   └── export_data.py                 # Data export script
+│   ├── auto_import.py               # Auto import script on server stop
+│   └── export_data.py               # Data export script
 ├── assets/
 │   └── icon.png
 ├── minetrack.db                       # SQLite database
