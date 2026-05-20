@@ -2,6 +2,46 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useAppStore } from './app'
 
+const LOADING_MESSAGES = [
+  '少女丈量世界版图中...',
+  '少女翻阅时光日记中...',
+  '少女记录死亡笔记中...',
+  '少女清点怪物战利品中...',
+  '少女围观玩家互殴中...',
+  '少女数着跳跃次数中...',
+  '少女追踪足迹中...',
+  '少女测量疾跑距离中...',
+  '少女仰望飞行轨迹中...',
+  '少女潜水探测中...',
+  '少女策马奔腾中...',
+  '少女泛舟湖上中...',
+  '少女翱翔天际中...',
+  '少女计算坠落距离中...',
+  '少女包扎伤口中...',
+  '少女整理床铺中...',
+  '少女垂钓统计中...',
+  '少女喂养动物中...',
+  '少女与村民讨价还价中...',
+  '少女施展附魔中...',
+  '少女敲打工作台中...',
+  '少女烧炼矿石中...',
+  '少女锻造铁砧中...',
+  '少女翻箱倒柜中...',
+  '少女敲响钟声中...',
+  '少女品尝蛋糕中...',
+  '少女潜行观察中...',
+  '少女记录击杀战报中...',
+  '少女撰写阵亡通知中...',
+  '少女打造装备中...',
+  '少女试用道具中...',
+  '少女拾取战利品中...',
+  '少女丢弃杂物中...',
+  '少女挖掘方块中...',
+  '少女整理情报中...',
+]
+
+const DEFAULT_LOADING_MESSAGE = '少女祈祷中...'
+
 export const useDataStore = defineStore('data', () => {
   const mapSizes = ref<Record<string, Record<string, number>>>({})
   const playerStats = ref<Record<string, Record<string, Record<string, number>>>>({})
@@ -22,6 +62,27 @@ export const useDataStore = defineStore('data', () => {
   const allPlayers = ref<Set<string>>(new Set())
   const loading = ref(false)
   const loaded = ref(false)
+  const loadingMessage = ref(DEFAULT_LOADING_MESSAGE)
+
+  let messageTimer: ReturnType<typeof setInterval> | null = null
+  let messageIndex = 0
+
+  function startMessageRotation() {
+    messageIndex = 0
+    loadingMessage.value = LOADING_MESSAGES[0]
+    messageTimer = setInterval(() => {
+      messageIndex = (messageIndex + 1) % LOADING_MESSAGES.length
+      loadingMessage.value = LOADING_MESSAGES[messageIndex]
+    }, 800)
+  }
+
+  function stopMessageRotation() {
+    if (messageTimer) {
+      clearInterval(messageTimer)
+      messageTimer = null
+    }
+    loadingMessage.value = DEFAULT_LOADING_MESSAGE
+  }
 
   function collectPlayersFromStats(stats: Record<string, Record<string, number>>) {
     Object.values(stats).forEach(dateData => {
@@ -114,21 +175,25 @@ export const useDataStore = defineStore('data', () => {
   async function loadAll(force = false) {
     if (loaded.value && !force) return
     loading.value = true
+    startMessageRotation()
     try {
       const appStore = useAppStore()
       if (appStore.isStatic) {
+        loadingMessage.value = '少女翻阅古籍中...'
         await loadStaticData()
       } else {
         try {
           await loadFromAPI()
         } catch {
           appStore.setMode('static')
+          loadingMessage.value = '少女翻阅古籍中...'
           await loadStaticData()
         }
       }
       extractMetadata()
       loaded.value = true
     } finally {
+      stopMessageRotation()
       loading.value = false
     }
   }
@@ -140,7 +205,7 @@ export const useDataStore = defineStore('data', () => {
 
   return {
     mapSizes, playerStats, battleStats, craftStats, itemStats, blockStats,
-    allDates, allPlayers, loading, loaded,
+    allDates, allPlayers, loading, loaded, loadingMessage,
     loadAll, reload,
   }
 })

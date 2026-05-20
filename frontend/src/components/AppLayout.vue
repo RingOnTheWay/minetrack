@@ -38,7 +38,7 @@ onMounted(() => {
     <Transition name="loading-fade">
       <div v-if="data.loading" class="global-loading-overlay">
         <div class="global-loading-card">
-          <div class="text-sm text-slate-500 dark:text-slate-400 mb-4">少女祈祷中...</div>
+          <div class="text-sm text-slate-500 dark:text-slate-400 mb-4">{{ data.loadingMessage }}</div>
           <div class="w-48 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
             <div class="h-full rounded-full loading-progress" />
           </div>

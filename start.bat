@@ -46,15 +46,29 @@ if not exist node_modules (
 cd ..
 
 echo [3/4] Starting backend server (port 5000)...
-powershell -WindowStyle Hidden -Command "Start-Process cmd -ArgumentList '/c uv run python backend/main.py' -WindowStyle Hidden"
+powershell -Command "Start-Process cmd -ArgumentList '/c uv run python backend/main.py' -WindowStyle Hidden"
 
 echo [4/4] Starting frontend dev server (port 5173)...
 cd frontend
-powershell -WindowStyle Hidden -Command "Start-Process cmd -ArgumentList '/c npm run dev' -WindowStyle Hidden"
+powershell -Command "Start-Process cmd -ArgumentList '/c npm run dev' -WindowStyle Hidden"
 cd ..
 
-timeout /t 3 /nobreak >nul
-start http://localhost:5173
+echo Waiting for servers to be ready...
+set /a _wait=0
+:check_ports
+netstat -aon 2>nul | findstr ":5173 .*LISTENING" >nul
+if %errorlevel% equ 0 goto servers_ready
+set /a _wait+=1
+if %_wait% geq 60 (
+    echo [WARN] Frontend server did not start within 60 seconds, opening browser anyway...
+    goto open_browser
+)
+timeout /t 1 /nobreak >nul
+goto check_ports
+:servers_ready
+echo Servers are ready!
+:open_browser
+start "" http://localhost:5173
 
 echo.
 echo ========================================
