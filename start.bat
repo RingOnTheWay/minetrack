@@ -53,22 +53,7 @@ cd frontend
 powershell -Command "Start-Process cmd -ArgumentList '/c npm run dev' -WindowStyle Hidden"
 cd ..
 
-echo Waiting for servers to be ready...
-set /a _wait=0
-:check_ports
-netstat -aon 2>nul | findstr ":5173 .*LISTENING" >nul
-if %errorlevel% equ 0 goto servers_ready
-set /a _wait+=1
-if %_wait% geq 60 (
-    echo [WARN] Frontend server did not start within 60 seconds, opening browser anyway...
-    goto open_browser
-)
-timeout /t 1 /nobreak >nul
-goto check_ports
-:servers_ready
-echo Servers are ready!
-:open_browser
-start "" http://localhost:5173
+echo.
 
 echo.
 echo ========================================

@@ -226,6 +226,8 @@ class ArchiveReader:
             import py7zr
             temp_dir = tempfile.mkdtemp(prefix='minetrack_7z_')
             try:
+                yield (0, total, '__extracting__')
+
                 with py7zr.SevenZipFile(self.archive_path, 'r') as sz:
                     sz.extract(temp_dir, targets=needed)
 
@@ -235,23 +237,22 @@ class ArchiveReader:
                     basename = normalized.split('/')[-1]
 
                     try:
+                        content = ''
                         file_path = os.path.join(temp_dir, member_path.replace('/', os.sep))
                         if not os.path.exists(file_path):
                             for root, dirs, files in os.walk(temp_dir):
                                 for f in files:
                                     candidate = os.path.join(root, f)
                                     rel = os.path.relpath(candidate, temp_dir).replace(os.sep, '/')
-                                    if _normalize_path(rel) == normalized:
+                                    if _normalize_path(rel) == normalized or f == basename:
                                         file_path = candidate
                                         break
                                 else:
                                     continue
                                 break
                         if os.path.exists(file_path):
-                            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                                content = f.read()
-                        else:
-                            content = ''
+                            with open(file_path, 'r', encoding='utf-8', errors='ignore') as fh:
+                                content = fh.read()
                     except Exception as e:
                         logger.warning(f"ArchiveReader 7z: error reading {member_path}: {e}")
                         yield (i + 1, total, basename)

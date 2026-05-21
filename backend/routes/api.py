@@ -18,6 +18,7 @@ from backend.services.scanner import (
     scan_server_folder, batch_scan_parent_folder, scan_archive,
     batch_scan_parent_folder_v2, _collect_scannable_items, _resolve_item_date,
     _parse_date_from_content, parse_date_from_folder_name,
+    parse_date_from_server_properties,
 )
 from backend.services.archiver import is_archive_file, ARCHIVE_EXTENSIONS, ArchiveReader
 from backend.services.parser import load_usercache_from_content, parse_all_stats_from_contents
@@ -363,7 +364,6 @@ def list_scannable():
     if not parent_folder or not os.path.exists(parent_folder):
         return jsonify({'error': '父文件夹不存在'}), 400
 
-    from backend.services.scanner import parse_date_from_server_properties
     from datetime import datetime
 
     items = _collect_scannable_items(parent_folder)
@@ -412,8 +412,8 @@ def batch_scan_stream():
                     yield f"data: {_json.dumps({'type': 'extracting', 'current': i + 1, 'total': total, 'name': item['name'], 'item_type': 'archive'})}\n\n"
 
                     reader = ArchiveReader(item['path'])
-                    for current, extract_total, filename in reader.read_needed_gen():
-                        yield f"data: {_json.dumps({'type': 'extracting_progress', 'current': current, 'extract_total': extract_total, 'filename': filename})}\n\n"
+                    for _ in reader.read_needed_gen():
+                        pass
 
                     archive_data = reader.needed_data
                     if not archive_data or not archive_data.get('server_properties'):

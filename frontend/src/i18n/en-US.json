@@ -212,7 +212,7 @@
     "archiveMode": "Archive",
     "archivePath": "Archive File Path",
     "archivePlaceholder": "Enter the archive file path",
-    "archiveHint": "Supports zip, tar.gz, 7z, rar and other common archive formats",
+    "archiveHint": "⚠ Archive import requires extraction, which is slower. Folder mode is recommended",
     "selectArchive": "Select Archive",
     "archiveCount": "{n} archive(s) found",
     "extracting": "Reading",
@@ -256,6 +256,8 @@
     "operationFailed": "Operation failed",
     "deleteAllConfirm": "Confirm Delete All Data",
     "filteredOut": "{n} filtered out",
-    "scanErrors": "Scan Errors"
+    "scanErrors": "Scan Errors",
+    "cancelScan": "Cancel Scan",
+    "scanAborted": "Scan cancelled"
   }
 }

@@ -62,10 +62,7 @@ const globalLoadingText = ref('')
 const globalLoadingSubText = ref('')
 const progressCurrent = ref(0)
 const progressTotal = ref(0)
-const decompressing = ref(false)
-const decompressCurrent = ref(0)
-const decompressTotal = ref(0)
-const decompressFilename = ref('')
+const abortController = ref<AbortController | null>(null)
 
 onMounted(() => { loadDates(); document.addEventListener('click', handleClickOutside); document.addEventListener('scroll', handleScroll, true) })
 onBeforeUnmount(() => { document.removeEventListener('click', handleClickOutside); document.removeEventListener('scroll', handleScroll, true) })
@@ -165,10 +162,11 @@ async function handleBatchScan() {
   batchLoading.value = true; batchResult.value = null; batchError.value = ''
   globalLoadingSubText.value = ''
   progressTotal.value = 0; progressCurrent.value = 0
-  decompressing.value = false; decompressCurrent.value = 0; decompressTotal.value = 0
+  abortController.value = new AbortController()
 
   try {
     await consumeSSE('/api/batch_scan_stream', { parent_folder: batchFolder.value.trim(), filter_config: getFilterConfig(), scan_mode: batchScanMode.value }, {
+      signal: abortController.value.signal,
       onStart: (data) => {
         progressTotal.value = data.total
         if (data.total > 0) {
@@ -180,7 +178,6 @@ async function handleBatchScan() {
       onProgress: (data) => {
         progressTotal.value = data.total
         progressCurrent.value = data.current
-        decompressing.value = false
         globalLoadingText.value = `${t('dataManage.batchScan')} (${data.current}/${data.total})`
         const typeLabel = data.item_type === 'archive' ? t('dataManage.archiveMode') : t('dataManage.folderMode')
         globalLoadingSubText.value = `${typeLabel}: ${data.name}`
@@ -188,31 +185,31 @@ async function handleBatchScan() {
       onExtracting: (data) => {
         progressTotal.value = data.total
         progressCurrent.value = data.current
-        decompressing.value = true
-        decompressCurrent.value = 0
-        decompressTotal.value = 0
-        decompressFilename.value = ''
         globalLoading.value = true
         globalLoadingText.value = `${t('dataManage.batchScan')} (${data.current}/${data.total})`
         globalLoadingSubText.value = `${t('dataManage.extracting')} ${data.name}`
       },
-      onExtractingProgress: (data) => {
-        decompressCurrent.value = data.current
-        decompressTotal.value = data.extract_total
-        decompressFilename.value = data.filename || ''
-      },
       onComplete: (data) => {
         batchResult.value = { imported: data.imported, total: data.total, filtered_count: data.filtered_count, errors: data.errors || [] }
         globalLoadingSubText.value = ''
-        decompressing.value = false
         globalLoading.value = false
       },
     })
     await refreshAllData()
   } catch (e: any) {
-    batchError.value = e.message || t('dataManage.operationFailed')
+    if (e.name === 'AbortError') {
+      batchError.value = t('dataManage.scanAborted')
+    } else {
+      batchError.value = e.message || t('dataManage.operationFailed')
+    }
   } finally {
-    batchLoading.value = false; globalLoading.value = false; globalLoadingSubText.value = ''; decompressing.value = false
+    batchLoading.value = false; globalLoading.value = false; globalLoadingSubText.value = ''; abortController.value = null
+  }
+}
+
+function cancelBatchScan() {
+  if (abortController.value) {
+    abortController.value.abort()
   }
 }
 
@@ -452,7 +449,7 @@ function selectArchiveAndClose(archivePath: string) {
                 <FolderOpen class="w-4 h-4" />
               </button>
             </div>
-            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('dataManage.archiveHint') }}</p>
+            <p class="mt-1 text-xs text-amber-600 dark:text-amber-400">{{ t('dataManage.archiveHint') }}</p>
           </div>
           <div>
             <label class="block mb-2 text-sm font-medium text-slate-600 dark:text-slate-400">{{ t('dataManage.scanDate') }}</label>
@@ -815,25 +812,25 @@ function selectArchiveAndClose(archivePath: string) {
     <Teleport to="body">
       <div v-if="globalLoading" class="global-loading-overlay">
         <div class="global-loading-card dark:bg-slate-800">
-          <Loader2 class="w-12 h-12 animate-spin text-brand" />
+          <div class="h-12 flex items-center justify-center">
+            <Loader2 class="w-12 h-12 animate-spin text-brand" />
+          </div>
           <div class="mt-6 text-base font-semibold text-slate-700 dark:text-slate-200">{{ globalLoadingText }}</div>
           <div v-if="globalLoadingSubText" class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ globalLoadingSubText }}</div>
-          <div v-if="decompressing && decompressTotal > 0" class="mt-3 w-64">
-            <div class="flex items-center justify-between text-xs text-slate-400 dark:text-slate-500 mb-1">
-              <span>{{ t('dataManage.extractProgress') }}</span>
-              <span>{{ decompressCurrent }} / {{ decompressTotal }}</span>
-            </div>
-            <div class="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-              <div class="h-full bg-brand/60 rounded-full transition-all duration-150 ease-out" :style="{ width: `${decompressTotal > 0 ? (decompressCurrent / decompressTotal) * 100 : 0}%` }" />
-            </div>
-          </div>
           <div v-if="progressTotal > 0" class="mt-4 w-64">
             <div class="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
               <div class="h-full bg-brand rounded-full transition-all duration-300 ease-out" :style="{ width: `${progressTotal > 0 ? (progressCurrent / progressTotal) * 100 : 0}%` }" />
             </div>
             <div class="mt-2 text-xs text-slate-400 dark:text-slate-500 text-center">{{ progressCurrent }} / {{ progressTotal }}</div>
           </div>
-          <div v-else-if="!decompressing" class="mt-2 text-sm text-slate-400 dark:text-slate-500">{{ t('common.loading') }}</div>
+          <div v-else class="mt-2 text-sm text-slate-400 dark:text-slate-500">{{ t('common.loading') }}</div>
+          <button
+            v-if="abortController"
+            class="mt-4 px-4 py-2 text-sm text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 border border-red-200 dark:border-red-800/50 rounded-lg transition-all"
+            @click="cancelBatchScan"
+          >
+            {{ t('dataManage.cancelScan') }}
+          </button>
         </div>
       </div>
     </Teleport>

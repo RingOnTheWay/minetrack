@@ -212,7 +212,7 @@
     "archiveMode": "压缩包",
     "archivePath": "压缩包文件路径",
     "archivePlaceholder": "输入压缩包文件路径",
-    "archiveHint": "支持 zip、tar.gz、7z、rar 等常见压缩格式",
+    "archiveHint": "⚠ 压缩包导入需要解压读取，速度较慢，建议优先使用文件夹模式",
     "selectArchive": "选择压缩包",
     "archiveCount": "发现 {n} 个压缩包",
     "extracting": "正在读取",
@@ -256,6 +256,8 @@
     "operationFailed": "操作失败",
     "deleteAllConfirm": "确认删除全部数据",
     "filteredOut": "已过滤 {n} 人",
-    "scanErrors": "扫描错误"
+    "scanErrors": "扫描错误",
+    "cancelScan": "终止扫描",
+    "scanAborted": "扫描已终止"
   }
 }
