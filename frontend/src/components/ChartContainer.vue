@@ -193,7 +193,11 @@ const option = computed(() => {
         nameTextStyle: { color: dark ? '#64748b' : '#94a3b8', fontSize: 12, padding: [0, 0, 0, -20] },
         axisLine: { show: false },
         axisTick: { show: false },
-        axisLabel: { color: dark ? '#64748b' : '#94a3b8', fontSize: 12 },
+        axisLabel: {
+          color: dark ? '#64748b' : '#94a3b8',
+          fontSize: 12,
+          formatter: (v: number) => Number.isInteger(v) ? String(v) : v.toFixed(2).replace(/\.?0+$/, ''),
+        },
         splitLine: { lineStyle: { color: dark ? hexToRgba(brandColor, 0.15) : '#d1ddd1', type: 'dashed' } },
       },
       {
@@ -202,7 +206,11 @@ const option = computed(() => {
         alignTicks: true,
         axisLine: { show: false },
         axisTick: { show: false },
-        axisLabel: { color: dark ? '#64748b' : '#94a3b8', fontSize: 12 },
+        axisLabel: {
+          color: dark ? '#64748b' : '#94a3b8',
+          fontSize: 12,
+          formatter: (v: number) => Number.isInteger(v) ? String(v) : v.toFixed(2).replace(/\.?0+$/, ''),
+        },
         splitLine: { show: false },
       },
     ],

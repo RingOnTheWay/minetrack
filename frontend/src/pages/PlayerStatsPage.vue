@@ -41,7 +41,7 @@ const STAT_I18N: Record<string, string> = {
 
 const STAT_TRANSFORM: Record<string, ((v: number) => number) | null> = {
   play_time: (v: number) => Number((v / 3600).toFixed(1)),
-  distance_walked: (v: number) => Number((v / 100000).toFixed(1)),
+  distance_walked: (v: number) => Number((v / 1000).toFixed(1)),
   sneak_time: (v: number) => Number((v / 3600).toFixed(1)),
 }
 
