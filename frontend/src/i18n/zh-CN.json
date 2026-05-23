@@ -13,6 +13,7 @@
     "blockStats": "方块统计",
     "activity": "活动统计",
     "dataManage": "数据管理",
+    "honor": "荣誉称号",
     "settings": "设置"
   },
   "common": {
@@ -259,5 +260,58 @@
     "scanErrors": "扫描错误",
     "cancelScan": "终止扫描",
     "scanAborted": "扫描已终止"
+  },
+  "honor": {
+    "title": "荣誉称号",
+    "subtitle": "根据数据评选出的各领域最强者",
+    "cumulative": "历史累计荣誉",
+    "cumulativeDesc": "基于全部历史数据",
+    "days": "天",
+    "latest": "今日之星",
+    "latestDesc": "基于最新一天数据",
+    "titles": {
+      "mineGod": "挖矿狂魔",
+      "deathMaster": "死神眷顾",
+      "slayerKing": "屠龙勇士",
+      "ironMan": "肝帝",
+      "craftMaster": "合成大师",
+      "fisherman": "姜太公",
+      "sleepyhead": "睡美人",
+      "survivor": "不死之身",
+      "enchanter": "附魔宗师",
+      "marathoner": "长征英雄",
+      "creeperBait": "苦力怕之友",
+      "diamondHunter": "钻石王老五",
+      "pvpKing": "PVP之王",
+      "bedBreaker": "赖床冠军",
+      "villagerFriend": "村民之友",
+      "acrobat": "杂技演员",
+      "deepDiver": "深海潜水员",
+      "tank": "肉盾",
+      "treasureHunter": "拾荒大师",
+      "speedster": "闪电侠"
+    },
+    "descs": {
+      "mineGod": "累计挖掘方块最多的玩家，锄头挥出火星子",
+      "deathMaster": "累计死亡次数最多的玩家，阎王爷的VIP客户",
+      "slayerKing": "累计击杀怪物最多的玩家，怪物见了都得绕道",
+      "ironMan": "累计游戏时长最长的玩家，肝到天荒地老",
+      "craftMaster": "累计合成物品最多的玩家，工作台就是第二个家",
+      "fisherman": "累计钓鱼次数最多的玩家，愿者上钩",
+      "sleepyhead": "累计睡觉次数最多的玩家，床是最好的朋友",
+      "survivor": "游戏时长与死亡次数比值最高的玩家，真正的生存大师",
+      "enchanter": "累计附魔次数最多的玩家，附魔台前的常客",
+      "marathoner": "累计行走+冲刺距离最远的玩家，用脚步丈量世界",
+      "creeperBait": "当日被苦力怕炸死次数最多的玩家，sssss...",
+      "diamondHunter": "当日获取钻石最多的玩家，钻石自由不是梦",
+      "pvpKing": "当日击杀玩家最多的玩家，战场上的王者",
+      "bedBreaker": "当日睡觉次数最多的玩家，睡到天昏地暗",
+      "villagerFriend": "当日与村民互动最多的玩家，交易达人",
+      "acrobat": "当日跳跃次数最多的玩家，蹦蹦跳跳真可爱",
+      "deepDiver": "当日游泳距离最远的玩家，海底两万里",
+      "tank": "当日承受伤害最多的玩家，站着让怪打都打不死",
+      "treasureHunter": "当日拾取物品种类最多的玩家，什么都要捡",
+      "speedster": "当日冲刺距离最远的玩家，快到飞起"
+    }
   }
 }

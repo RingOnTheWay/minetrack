@@ -7,7 +7,7 @@ import { useAppStore } from '@/stores/app'
 import type { NavKey } from '@/stores/app'
 import {
   LayoutDashboard, Map, Users, Swords, Hammer, Package, Pickaxe, TrendingUp,
-  Database, Languages, Moon, Sun
+  Database, Languages, Moon, Sun, Trophy
 } from 'lucide-vue-next'
 
 import iconUrl from '/icon.png'
@@ -35,6 +35,7 @@ const allMenuItems = computed(() => [
   { icon: Package, label: t('nav.itemStats'), path: '/items' as NavKey, badge: null },
   { icon: Pickaxe, label: t('nav.blockStats'), path: '/blocks' as NavKey, badge: null },
   { icon: TrendingUp, label: t('nav.activity'), path: '/activity' as NavKey, badge: null },
+  { icon: Trophy, label: t('nav.honor'), path: '/honor' as NavKey, badge: null, isHonor: true },
   { icon: Database, label: t('nav.dataManage'), path: '/data-manage' as NavKey, badge: null },
 ])
 
@@ -73,11 +74,18 @@ function toggleLocale() {
           v-for="item in menuItems"
           :key="item.path"
           class="relative w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-300 group"
-          :class="!isSettingsPage && currentPath === item.path
-            ? 'nav-item-active'
-            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/80 dark:hover:bg-slate-800/60'"
+          :class="[
+            !isSettingsPage && currentPath === item.path
+              ? 'nav-item-active'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/80 dark:hover:bg-slate-800/60',
+            item.isHonor ? 'honor-nav-item' : ''
+          ]"
           @click="navigate(item.path)"
         >
+          <div
+            v-if="item.isHonor"
+            class="honor-glow-border"
+          />
           <div class="relative flex items-center gap-3">
             <div
               class="nav-icon transition-colors"
@@ -99,7 +107,7 @@ function toggleLocale() {
           </span>
 
           <div
-            v-if="!isSettingsPage && currentPath === item.path"
+            v-if="!isSettingsPage && currentPath === item.path && !item.isHonor"
             class="nav-indicator absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-r-full"
           />
         </button>
@@ -159,11 +167,18 @@ function toggleLocale() {
             v-for="item in menuItems"
             :key="item.path"
             class="relative w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-300 group"
-            :class="!isSettingsPage && currentPath === item.path
-              ? 'nav-item-active'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/80 dark:hover:bg-slate-800/60'"
+            :class="[
+              !isSettingsPage && currentPath === item.path
+                ? 'nav-item-active'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/80 dark:hover:bg-slate-800/60',
+              item.isHonor ? 'honor-nav-item' : ''
+            ]"
             @click="navigate(item.path)"
           >
+            <div
+              v-if="item.isHonor"
+              class="honor-glow-border"
+            />
             <div class="relative flex items-center gap-3">
               <div
                 class="nav-icon transition-colors"
@@ -182,7 +197,7 @@ function toggleLocale() {
             </span>
 
             <div
-              v-if="!isSettingsPage && currentPath === item.path"
+              v-if="!isSettingsPage && currentPath === item.path && !item.isHonor"
               class="nav-indicator absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-r-full"
             />
           </button>
@@ -290,5 +305,71 @@ function toggleLocale() {
 .hide-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+@property --honor-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes honor-glow-rotate {
+  0% {
+    --honor-angle: 0deg;
+  }
+  100% {
+    --honor-angle: 360deg;
+  }
+}
+
+.honor-nav-item {
+  position: relative;
+}
+
+.honor-glow-border {
+  position: absolute;
+  inset: -1px;
+  border-radius: calc(0.5rem + 1px);
+  padding: 2px;
+  background: conic-gradient(
+    from var(--honor-angle),
+    var(--honor-glow-1-dark, #556655),
+    var(--honor-glow-1, #779977),
+    var(--honor-glow-2, #AA4477),
+    var(--honor-glow-2-light, #CC6699),
+    var(--honor-glow-3, #7799CC),
+    var(--honor-glow-3-light, #99BBDD),
+    var(--honor-glow-4, #BB9955),
+    var(--honor-glow-4-light, #D4B877),
+    var(--honor-glow-5, #335566),
+    var(--honor-glow-5-light, #557788),
+    var(--honor-glow-1-dark, #556655)
+  );
+  animation: honor-glow-rotate 4s linear infinite;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 1;
+}
+
+:global(.dark) .honor-glow-border {
+  background: conic-gradient(
+    from var(--honor-angle),
+    var(--honor-glow-1-dark, #556655),
+    var(--honor-glow-1-light, #99bb99),
+    var(--honor-glow-2-light, #CC6699),
+    var(--honor-glow-2, #AA4477),
+    var(--honor-glow-3-light, #99BBDD),
+    var(--honor-glow-3, #7799CC),
+    var(--honor-glow-4-light, #D4B877),
+    var(--honor-glow-4, #BB9955),
+    var(--honor-glow-5-light, #557788),
+    var(--honor-glow-5, #335566),
+    var(--honor-glow-1-dark, #556655)
+  );
+  animation: honor-glow-rotate 4s linear infinite;
 }
 </style>

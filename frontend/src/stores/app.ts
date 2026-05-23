@@ -20,6 +20,32 @@ export const themePresets: ThemeColor[] = [
   { name: 'Crimson', primary: '#FF4637', light: '#FF7066', dark: '#CC3328' },
 ]
 
+export const THEME_GROUPS: { label: string; presets: ThemeColor[] }[] = [
+  {
+    label: 'AM',
+    presets: [
+      themePresets.find(p => p.name === 'Rose')!,
+      themePresets.find(p => p.name === 'Emerald')!,
+      themePresets.find(p => p.name === 'Sky')!,
+      themePresets.find(p => p.name === 'Amber')!,
+      themePresets.find(p => p.name === 'Teal')!,
+    ],
+  },
+  {
+    label: 'KB',
+    presets: [
+      themePresets.find(p => p.name === 'Gold')!,
+      themePresets.find(p => p.name === 'Navy')!,
+      themePresets.find(p => p.name === 'Crimson')!,
+      themePresets.find(p => p.name === 'HotPink')!,
+    ],
+  },
+]
+
+function findGroup(primary: string): { label: string; presets: ThemeColor[] } {
+  return THEME_GROUPS.find(g => g.presets.some(p => p.primary === primary)) || THEME_GROUPS[0]
+}
+
 function findPreset(primary: string): ThemeColor {
   return themePresets.find(p => p.primary === primary) || themePresets[0]
 }
@@ -32,11 +58,19 @@ function applyThemeColor(theme: ThemeColor) {
   root.style.setProperty('--brand', theme.primary)
   root.style.setProperty('--brand-light', theme.light)
   root.style.setProperty('--brand-dark', theme.dark)
+
+  const group = findGroup(theme.primary)
+  group.presets.forEach((preset, i) => {
+    root.style.setProperty(`--honor-glow-${i + 1}`, preset.primary)
+    root.style.setProperty(`--honor-glow-${i + 1}-light`, preset.light)
+    root.style.setProperty(`--honor-glow-${i + 1}-dark`, preset.dark)
+  })
+  root.style.setProperty('--honor-glow-count', String(group.presets.length))
 }
 
-export type NavKey = '/' | '/map' | '/players' | '/battle' | '/craft' | '/items' | '/blocks' | '/activity' | '/data-manage'
+export type NavKey = '/' | '/map' | '/players' | '/battle' | '/craft' | '/items' | '/blocks' | '/activity' | '/data-manage' | '/honor'
 
-const ALL_NAV_KEYS: NavKey[] = ['/', '/map', '/players', '/battle', '/craft', '/items', '/blocks', '/activity', '/data-manage']
+const ALL_NAV_KEYS: NavKey[] = ['/', '/map', '/players', '/battle', '/craft', '/items', '/blocks', '/activity', '/data-manage', '/honor']
 
 const ROUTE_LOADING_MESSAGES: Record<string, string> = {
   '/': '少女布置仪表盘中...',
@@ -48,6 +82,7 @@ const ROUTE_LOADING_MESSAGES: Record<string, string> = {
   '/blocks': '少女挥舞镐头中...',
   '/activity': '少女追踪足迹中...',
   '/data-manage': '少女整理档案中...',
+  '/honor': '少女颁发荣誉中...',
   '/settings': '少女调整旋钮中...',
 }
 
@@ -63,6 +98,7 @@ const DEFAULT_NAV_VISIBILITY: Record<NavKey, boolean> = {
   '/blocks': true,
   '/activity': true,
   '/data-manage': true,
+  '/honor': true,
 }
 
 function loadNavVisibility(): Record<NavKey, boolean> {

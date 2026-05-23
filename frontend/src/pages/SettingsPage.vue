@@ -5,7 +5,7 @@ import { useAppStore, themePresets } from '@/stores/app'
 import { useDataStore } from '@/stores/data'
 import type { NavKey } from '@/stores/app'
 import { apiGet, apiPost } from '@/services/api'
-import { Palette, User, Code, ExternalLink, Check, Scale, Calendar, LayoutList, Lock, BarChart3, Filter, X, Plus, Shield, ShieldOff, Clock, Pickaxe, UserCheck, Search, FolderSync, FolderOpen, RefreshCw, AlertCircle, CheckCircle2, Play, HardDrive, ArrowLeft, Folder, Loader2 } from 'lucide-vue-next'
+import { Palette, User, Code, ExternalLink, Check, Scale, Calendar, LayoutList, Lock, BarChart3, Filter, X, Plus, Shield, ShieldOff, Clock, Pickaxe, UserCheck, Search, FolderSync, FolderOpen, RefreshCw, AlertCircle, CheckCircle2, Play, HardDrive, ArrowLeft, Folder, Loader2, Trophy } from 'lucide-vue-next'
 import {
   LayoutDashboard, Map, Users, Swords, Hammer, Package, TrendingUp,
   Database,
@@ -42,6 +42,7 @@ const navItems = computed(() => [
   { icon: Package, label: t('nav.itemStats'), key: '/items' as NavKey },
   { icon: Pickaxe, label: t('nav.blockStats'), key: '/blocks' as NavKey },
   { icon: TrendingUp, label: t('nav.activity'), key: '/activity' as NavKey },
+  { icon: Trophy, label: t('nav.honor'), key: '/honor' as NavKey },
   { icon: Database, label: t('nav.dataManage'), key: '/data-manage' as NavKey },
 ])
 

@@ -13,6 +13,7 @@
     "blockStats": "Block Stats",
     "activity": "Activity",
     "dataManage": "Data Manage",
+    "honor": "Honor Titles",
     "settings": "Settings"
   },
   "common": {
@@ -259,5 +260,58 @@
     "scanErrors": "Scan Errors",
     "cancelScan": "Cancel Scan",
     "scanAborted": "Scan cancelled"
+  },
+  "honor": {
+    "title": "Honor Titles",
+    "subtitle": "The strongest in each field, based on data",
+    "cumulative": "All-Time Honors",
+    "cumulativeDesc": "Based on all historical data",
+    "days": "days",
+    "latest": "Daily Stars",
+    "latestDesc": "Based on latest day data",
+    "titles": {
+      "mineGod": "Mining Maniac",
+      "deathMaster": "Death's Favorite",
+      "slayerKing": "Dragon Slayer",
+      "ironMan": "Grind Lord",
+      "craftMaster": "Crafting Guru",
+      "fisherman": "Master Angler",
+      "sleepyhead": "Sleeping Beauty",
+      "survivor": "Immortal One",
+      "enchanter": "Enchant Master",
+      "marathoner": "Marathon Hero",
+      "creeperBait": "Creeper's BFF",
+      "diamondHunter": "Diamond Tycoon",
+      "pvpKing": "PVP Champion",
+      "bedBreaker": "Bed Potato",
+      "villagerFriend": "Villager Whisperer",
+      "acrobat": "Acrobat",
+      "deepDiver": "Deep Sea Diver",
+      "tank": "Iron Wall",
+      "treasureHunter": "Scavenger King",
+      "speedster": "The Flash"
+    },
+    "descs": {
+      "mineGod": "Most blocks mined overall — pickaxe on fire!",
+      "deathMaster": "Most deaths overall — VIP at the Grim Reaper's office",
+      "slayerKing": "Most mobs killed overall — mobs flee at the sight",
+      "ironMan": "Longest playtime overall — grinding till the end of time",
+      "craftMaster": "Most items crafted overall — the crafting table is home",
+      "fisherman": "Most fish caught overall — patience pays off",
+      "sleepyhead": "Most times slept overall — bed is best friend",
+      "survivor": "Highest playtime-to-death ratio — true survival master",
+      "enchanter": "Most items enchanted overall — enchanting table regular",
+      "marathoner": "Longest walk + sprint distance — measuring the world on foot",
+      "creeperBait": "Most creeper deaths today — ssssss...",
+      "diamondHunter": "Most diamonds obtained today — diamond freedom achieved",
+      "pvpKing": "Most player kills today — ruler of the battlefield",
+      "bedBreaker": "Most times slept today — sleeping the day away",
+      "villagerFriend": "Most villager interactions today — master trader",
+      "acrobat": "Most jumps today — bounce bounce bounce!",
+      "deepDiver": "Longest swim distance today — 20,000 leagues under the sea",
+      "tank": "Most damage taken today — standing tall through it all",
+      "treasureHunter": "Most item types picked up today — collector extraordinaire",
+      "speedster": "Longest sprint distance today — faster than lightning"
+    }
   }
 }
