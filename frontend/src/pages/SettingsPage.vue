@@ -4,8 +4,8 @@ import { useI18n } from 'vue-i18n'
 import { useAppStore, themePresets } from '@/stores/app'
 import { useDataStore } from '@/stores/data'
 import type { NavKey } from '@/stores/app'
-import { apiGet, apiPost } from '@/services/api'
-import { Palette, User, Code, ExternalLink, Check, Scale, Calendar, LayoutList, Lock, BarChart3, Filter, X, Plus, Shield, ShieldOff, Clock, Pickaxe, UserCheck, Search, FolderSync, FolderOpen, RefreshCw, AlertCircle, CheckCircle2, Play, HardDrive, ArrowLeft, Folder, Loader2, Trophy } from 'lucide-vue-next'
+import { apiGet, apiPost, apiPut, apiDelete } from '@/services/api'
+import { Palette, User, Code, ExternalLink, Check, Scale, Calendar, LayoutList, Lock, BarChart3, Filter, X, Plus, Shield, ShieldOff, Clock, Pickaxe, UserCheck, Search, FolderSync, FolderOpen, RefreshCw, AlertCircle, CheckCircle2, Play, HardDrive, ArrowLeft, Folder, Loader2, Trophy, Server, Pencil, Trash2, GripVertical } from 'lucide-vue-next'
 import {
   LayoutDashboard, Map, Users, Swords, Hammer, Package, TrendingUp,
   Database,
@@ -209,6 +209,9 @@ async function loadAutoScanStatus() {
       app.setAutoScanFolder(data.folder)
       autoScanFolderInput.value = data.folder
     }
+    if (data.server_name && data.server_name !== app.autoScanServerName) {
+      app.setAutoScanServerName(data.server_name)
+    }
   } catch {}
 }
 
@@ -219,6 +222,7 @@ async function toggleAutoScan() {
     await apiPost('/api/auto_scan/config', {
       enabled: newVal,
       folder: app.autoScanFolder,
+      server_name: app.autoScanServerName || app.currentServer,
     })
     app.setAutoScanEnabled(newVal)
   } catch {
@@ -235,6 +239,7 @@ async function saveAutoScanFolder() {
     await apiPost('/api/auto_scan/config', {
       enabled: app.autoScanEnabled,
       folder: folder,
+      server_name: app.autoScanServerName || app.currentServer,
     })
     app.setAutoScanFolder(folder)
   } catch {
@@ -318,10 +323,212 @@ function selectFolderAndClose() {
   saveAutoScanFolder()
   showFolderBrowser.value = false
 }
+
+// Server management
+const newServerName = ref('')
+const renamingServer = ref<string | null>(null)
+const renameInput = ref('')
+
+async function addServer() {
+  const name = newServerName.value.trim()
+  if (!name) return
+  try {
+    await apiPost('/api/servers', { name })
+    newServerName.value = ''
+    await app.loadServers()
+    if (!app.currentServer && app.servers.length > 0) {
+      app.setCurrentServer(app.servers[0])
+    }
+    await data.reload()
+  } catch {}
+}
+
+function startRename(name: string) {
+  renamingServer.value = name
+  renameInput.value = name
+}
+
+async function confirmRename(oldName: string) {
+  const newName = renameInput.value.trim()
+  if (!newName || newName === oldName) {
+    renamingServer.value = null
+    return
+  }
+  try {
+    await apiPut(`/api/servers/${encodeURIComponent(oldName)}`, { new_name: newName })
+    renamingServer.value = null
+    await app.loadServers()
+    if (app.currentServer === oldName) {
+      app.setCurrentServer(newName)
+    }
+    await data.reload()
+  } catch {}
+}
+
+async function deleteServer(name: string) {
+  if (!confirm(t('settings.deleteServerConfirm', { name }))) return
+  try {
+    await apiDelete(`/api/servers/${encodeURIComponent(name)}`, {})
+    await app.loadServers()
+    if (app.currentServer === name) {
+      if (app.servers.length > 0) {
+        app.setCurrentServer(app.servers[0])
+      } else {
+        app.setCurrentServer('')
+      }
+    }
+    await data.reload()
+  } catch {}
+}
+
+function onNewServerKeydown(e: KeyboardEvent) {
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    addServer()
+  }
+}
+
+function onRenameKeydown(e: KeyboardEvent, oldName: string) {
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    confirmRename(oldName)
+  } else if (e.key === 'Escape') {
+    renamingServer.value = null
+  }
+}
+
+// Drag & drop reorder
+const dragIndex = ref<number | null>(null)
+const dragOverIndex = ref<number | null>(null)
+
+function onDragStart(index: number) {
+  dragIndex.value = index
+}
+
+function onDragOver(e: DragEvent, index: number) {
+  e.preventDefault()
+  dragOverIndex.value = index
+}
+
+function onDragLeave() {
+  dragOverIndex.value = null
+}
+
+async function onDrop(index: number) {
+  if (dragIndex.value === null || dragIndex.value === index) {
+    dragIndex.value = null
+    dragOverIndex.value = null
+    return
+  }
+  const list = [...app.servers]
+  const [moved] = list.splice(dragIndex.value, 1)
+  list.splice(index, 0, moved)
+  app.setServers(list)
+  dragIndex.value = null
+  dragOverIndex.value = null
+  try {
+    await apiPost('/api/servers/reorder', { ordered_names: list })
+  } catch {
+    await app.loadServers()
+  }
+}
+
+function onDragEnd() {
+  dragIndex.value = null
+  dragOverIndex.value = null
+}
 </script>
 
 <template>
   <div class="space-y-6 max-w-3xl">
+    <div
+      v-motion-slide-bottom
+      class="relative bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-5 md:p-8 border border-white/80 dark:border-slate-700/80 shadow-sm overflow-hidden"
+    >
+      <div class="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-brand/5 dark:from-brand/3 to-transparent rounded-full blur-3xl" />
+
+      <div class="relative">
+        <div class="flex items-center gap-4 mb-8">
+          <div class="w-12 h-12 bg-gradient-to-br from-brand/20 to-brand/10 rounded-xl flex items-center justify-center">
+            <Server class="w-6 h-6 text-brand dark:text-brand-light" />
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">{{ t('settings.serverManagement') }}</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('settings.serverManagementDesc') }}</p>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <div v-if="app.servers.length === 0" class="p-4 bg-slate-100/80 dark:bg-slate-700/50 rounded-xl text-sm text-slate-400 dark:text-slate-500 text-center">
+            {{ t('settings.noServers') }}
+          </div>
+          <div
+            v-for="(s, index) in app.servers"
+            :key="s"
+            draggable="true"
+            class="flex items-center gap-3 p-3 rounded-xl bg-slate-100/80 dark:bg-slate-700/50 transition-all"
+            :class="{
+              'opacity-50': dragIndex === index,
+              'ring-2 ring-brand/30 dark:ring-brand/50': dragOverIndex === index && dragIndex !== index,
+            }"
+            @dragstart="onDragStart(index)"
+            @dragover="onDragOver($event, index)"
+            @dragleave="onDragLeave"
+            @drop="onDrop(index)"
+            @dragend="onDragEnd"
+          >
+            <div class="cursor-grab active:cursor-grabbing text-slate-300 dark:text-slate-500 hover:text-slate-500 dark:hover:text-slate-300 transition-colors shrink-0">
+              <GripVertical class="w-4 h-4" />
+            </div>
+            <Server class="w-4 h-4 text-brand dark:text-brand-light shrink-0" />
+            <div v-if="renamingServer === s" class="flex-1 flex items-center gap-2">
+              <input
+                v-model="renameInput"
+                type="text"
+                class="flex-1 px-3 py-1.5 bg-white/80 dark:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-lg text-sm dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand/40 transition-all"
+                @keydown="onRenameKeydown($event, s)"
+                @blur="confirmRename(s)"
+              />
+            </div>
+            <span v-else class="flex-1 text-sm font-medium text-slate-700 dark:text-slate-200 truncate">{{ s }}</span>
+            <div class="flex items-center gap-1 shrink-0">
+              <button
+                v-if="renamingServer !== s"
+                class="p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:bg-slate-200/60 dark:hover:bg-slate-600/50 hover:text-brand dark:hover:text-brand-light transition-all"
+                @click="startRename(s)"
+              >
+                <Pencil class="w-3.5 h-3.5" />
+              </button>
+              <button
+                class="p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-500 dark:hover:text-red-400 transition-all"
+                @click="deleteServer(s)"
+              >
+                <Trash2 class="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          <div class="flex gap-2 pt-2">
+            <input
+              v-model="newServerName"
+              type="text"
+              :placeholder="t('settings.serverNamePlaceholder')"
+              class="flex-1 px-3 py-2 bg-white/80 dark:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-lg text-sm dark:text-slate-200 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand/40 transition-all"
+              @keydown="onNewServerKeydown"
+            />
+            <button
+              class="px-4 py-2 bg-brand/10 dark:bg-brand/20 text-brand dark:text-brand-light hover:bg-brand/20 dark:hover:bg-brand/30 rounded-lg transition-all text-sm font-medium disabled:opacity-50"
+              :disabled="!newServerName.trim()"
+              @click="addServer"
+            >
+              <Plus class="w-4 h-4" />
+            </button>
+          </div>
+          <p v-if="app.servers.length > 1" class="text-xs text-slate-400 dark:text-slate-500 pt-1">{{ t('settings.dragToReorder') }}</p>
+        </div>
+      </div>
+    </div>
+
     <div
       v-motion-slide-bottom
       class="relative bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-5 md:p-8 border border-white/80 dark:border-slate-700/80 shadow-sm overflow-hidden"
@@ -788,6 +995,21 @@ function selectFolderAndClose() {
                 <FolderOpen class="w-4 h-4" />
               </button>
             </div>
+          </div>
+
+          <div>
+            <div class="flex items-center gap-2 mb-3">
+              <Server class="w-4 h-4 text-brand dark:text-brand-light" />
+              <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('settings.autoScanServer') }}</label>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">{{ t('settings.autoScanServerDesc') }}</p>
+            <select
+              :value="app.autoScanServerName || app.currentServer"
+              @change="app.setAutoScanServerName(($event.target as HTMLSelectElement).value); saveAutoScanFolder()"
+              class="w-full px-3 py-2 bg-white/80 dark:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-lg text-sm dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand/40 transition-all"
+            >
+              <option v-for="s in app.servers" :key="s" :value="s">{{ s }}</option>
+            </select>
           </div>
 
           <div>

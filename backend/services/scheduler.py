@@ -11,6 +11,7 @@ _scheduler: BackgroundScheduler | None = None
 _auto_scan_config: dict = {
     'enabled': False,
     'folder': '',
+    'server_name': '',
 }
 _last_scan_status: dict = {
     'last_scan_time': None,
@@ -25,12 +26,15 @@ def get_auto_scan_config() -> dict:
     return dict(_auto_scan_config)
 
 
-def update_auto_scan_config(enabled: bool | None = None, folder: str | None = None) -> dict:
+def update_auto_scan_config(enabled: bool | None = None, folder: str | None = None,
+                            server_name: str | None = None) -> dict:
     global _auto_scan_config
     if enabled is not None:
         _auto_scan_config['enabled'] = enabled
     if folder is not None:
         _auto_scan_config['folder'] = folder
+    if server_name is not None:
+        _auto_scan_config['server_name'] = server_name
 
     if _scheduler:
         if _auto_scan_config['enabled'] and _auto_scan_config['folder']:
@@ -48,6 +52,7 @@ def get_last_scan_status() -> dict:
 def _execute_auto_scan():
     global _last_scan_status
     folder = _auto_scan_config.get('folder', '')
+    server_name = _auto_scan_config.get('server_name', '') or 'default'
     if not folder or not os.path.exists(folder):
         _last_scan_status = {
             'last_scan_time': datetime.now().isoformat(),
@@ -62,7 +67,7 @@ def _execute_auto_scan():
     scan_date = (now - timedelta(seconds=1)).strftime('%Y-%m-%d')
 
     try:
-        result = scan_server_folder(folder, date=scan_date)
+        result = scan_server_folder(folder, date=scan_date, server_name=server_name)
         _last_scan_status = {
             'last_scan_time': now.isoformat(),
             'last_scan_success': True,

@@ -32,7 +32,8 @@
     "count": "数量",
     "item": "物品",
     "search": "搜索...",
-    "growth": "增长"
+    "growth": "增长",
+    "switchServer": "切换服务器"
   },
   "dashboard": {
     "totalDays": "统计天数",
@@ -174,7 +175,22 @@
     "autoScanTriggerSuccess": "扫描成功",
     "autoScanLastStatus": "上次扫描状态",
     "autoScanLastTime": "扫描时间",
-    "autoScanLastDate": "数据日期"
+    "autoScanLastDate": "数据日期",
+    "serverManagement": "服务器管理",
+    "serverManagementDesc": "添加、重命名或删除服务器，不同服务器的数据相互独立",
+    "addServer": "添加服务器",
+    "serverName": "服务器名称",
+    "serverNamePlaceholder": "输入服务器名称",
+    "renameServer": "重命名",
+    "deleteServer": "删除",
+    "deleteServerConfirm": "确认删除服务器 \"{name}\"？该服务器的所有数据将被永久删除。",
+    "newServerName": "新名称",
+    "newServerNamePlaceholder": "输入新名称",
+    "noServers": "暂无服务器，请先添加",
+    "selectServer": "选择服务器",
+    "autoScanServer": "扫描目标服务器",
+    "autoScanServerDesc": "自动扫描的数据将归属到选中的服务器",
+    "dragToReorder": "拖动调整顺序"
   },
   "dateRange": {
     "allDates": "全部日期",

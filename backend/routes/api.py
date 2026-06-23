@@ -13,6 +13,7 @@ from backend.database.repositories import (
     MapSizeRepository,
     PlayerStatsRepository,
     DetailStatsRepository,
+    ServerRepository,
 )
 from backend.services.scanner import (
     scan_server_folder, batch_scan_parent_folder, scan_archive,
@@ -31,6 +32,64 @@ from backend.services.scheduler import (
 
 api_bp = Blueprint('api', __name__)
 
+
+# ==================== Server Management ====================
+
+@api_bp.route('/api/servers', methods=['GET'])
+def list_servers():
+    servers = ServerRepository.get_all()
+    return jsonify(servers)
+
+
+@api_bp.route('/api/servers', methods=['POST'])
+def add_server():
+    data = request.json
+    name = data.get('name', '').strip()
+    if not name:
+        return jsonify({'error': '服务器名称不能为空'}), 400
+    try:
+        ServerRepository.add(name)
+        return jsonify({'success': True, 'name': name}), 201
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 409
+
+
+@api_bp.route('/api/servers/<name>', methods=['PUT'])
+def rename_server(name: str):
+    data = request.json
+    new_name = data.get('new_name', '').strip()
+    if not new_name:
+        return jsonify({'error': '新服务器名称不能为空'}), 400
+    try:
+        ServerRepository.rename(name, new_name)
+        return jsonify({'success': True, 'old_name': name, 'new_name': new_name})
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 404
+
+
+@api_bp.route('/api/servers/<name>', methods=['DELETE'])
+def delete_server(name: str):
+    try:
+        ServerRepository.delete(name)
+        return jsonify({'success': True, 'deleted_server': name})
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 404
+
+
+@api_bp.route('/api/servers/reorder', methods=['POST'])
+def reorder_servers():
+    data = request.json
+    ordered_names = data.get('ordered_names', [])
+    if not isinstance(ordered_names, list):
+        return jsonify({'error': 'ordered_names 必须是数组'}), 400
+    try:
+        ServerRepository.reorder(ordered_names)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+
+# ==================== Browse ====================
 
 @api_bp.route('/api/browse', methods=['GET'])
 def browse_directory():
@@ -77,6 +136,8 @@ def browse_directory():
         return jsonify({'error': str(e)}), 500
 
 
+# ==================== Scan ====================
+
 @api_bp.route('/api/scan', methods=['POST'])
 def scan_data():
     data = request.json
@@ -86,13 +147,15 @@ def scan_data():
         return jsonify({'error': '服务器文件夹不存在'}), 400
 
     try:
+        server_name = data.get('server_name', 'default')
         filter_config = data.get('filter_config', {})
         date = data.get('date') or None
         if date:
             import re
             if not re.match(r'^\d{4}-\d{2}-\d{2}$', date):
                 return jsonify({'error': '日期格式无效，需为 YYYY-MM-DD'}), 400
-        result = scan_server_folder(server_folder, date=date, filter_config=filter_config)
+        result = scan_server_folder(server_folder, date=date, server_name=server_name,
+                                    filter_config=filter_config)
         response = {
             'success': True,
             'date': result['date'],
@@ -125,13 +188,15 @@ def scan_archive_data():
         return jsonify({'error': '不支持的压缩包格式'}), 400
 
     try:
+        server_name = data.get('server_name', 'default')
         filter_config = data.get('filter_config', {})
         date = data.get('date') or None
         if date:
             import re
             if not re.match(r'^\d{4}-\d{2}-\d{2}$', date):
                 return jsonify({'error': '日期格式无效，需为 YYYY-MM-DD'}), 400
-        result = scan_archive(archive_path, date=date, filter_config=filter_config)
+        result = scan_archive(archive_path, date=date, server_name=server_name,
+                              filter_config=filter_config)
         response = {
             'success': True,
             'date': result['date'],
@@ -152,15 +217,19 @@ def scan_archive_data():
         return jsonify({'error': str(e)}), 500
 
 
+# ==================== Data Query ====================
+
 @api_bp.route('/api/map_sizes', methods=['GET'])
 def get_map_sizes():
-    return jsonify(MapSizeRepository.get_all())
+    server_name = request.args.get('server_name')
+    return jsonify(MapSizeRepository.get_all(server_name=server_name))
 
 
 @api_bp.route('/api/player_stats', methods=['GET'])
 def get_player_stats():
     stat_type = request.args.get('type', 'play_time')
-    return jsonify(PlayerStatsRepository.get_by_type(stat_type))
+    server_name = request.args.get('server_name')
+    return jsonify(PlayerStatsRepository.get_by_type(stat_type, server_name=server_name))
 
 
 @api_bp.route('/api/stats/<stat_domain>', methods=['GET'])
@@ -169,7 +238,9 @@ def get_detail_stats(stat_domain: str):
     if not category:
         return jsonify({'error': '需要 category 参数'}), 400
 
-    data = DetailStatsRepository.get_by_domain_and_category(stat_domain, category)
+    server_name = request.args.get('server_name')
+    data = DetailStatsRepository.get_by_domain_and_category(stat_domain, category,
+                                                            server_name=server_name)
     return jsonify(data)
 
 
@@ -177,35 +248,45 @@ def get_detail_stats(stat_domain: str):
 def get_detail_summary(stat_domain: str):
     category = request.args.get('category', 'killed')
     limit = int(request.args.get('limit', 10))
-    data = DetailStatsRepository.get_summary(stat_domain, category, limit)
+    server_name = request.args.get('server_name')
+    data = DetailStatsRepository.get_summary(stat_domain, category, limit,
+                                             server_name=server_name)
     return jsonify(data)
 
 
 @api_bp.route('/api/battle_stats', methods=['GET'])
 def get_battle_stats():
     category = request.args.get('category', 'killed')
-    data = DetailStatsRepository.get_by_domain_and_category('battle', category)
+    server_name = request.args.get('server_name')
+    data = DetailStatsRepository.get_by_domain_and_category('battle', category,
+                                                            server_name=server_name)
     return jsonify(data)
 
 
 @api_bp.route('/api/craft_stats', methods=['GET'])
 def get_craft_stats():
     category = request.args.get('category', 'crafted')
-    data = DetailStatsRepository.get_by_domain_and_category('craft', category)
+    server_name = request.args.get('server_name')
+    data = DetailStatsRepository.get_by_domain_and_category('craft', category,
+                                                            server_name=server_name)
     return jsonify(data)
 
 
 @api_bp.route('/api/item_stats', methods=['GET'])
 def get_item_stats():
     category = request.args.get('category', 'picked_up')
-    data = DetailStatsRepository.get_by_domain_and_category('item', category)
+    server_name = request.args.get('server_name')
+    data = DetailStatsRepository.get_by_domain_and_category('item', category,
+                                                            server_name=server_name)
     return jsonify(data)
 
 
 @api_bp.route('/api/block_stats', methods=['GET'])
 def get_block_stats():
     category = request.args.get('category', 'mined')
-    data = DetailStatsRepository.get_by_domain_and_category('block', category)
+    server_name = request.args.get('server_name')
+    data = DetailStatsRepository.get_by_domain_and_category('block', category,
+                                                            server_name=server_name)
     return jsonify(data)
 
 
@@ -213,7 +294,9 @@ def get_block_stats():
 def get_block_summary():
     category = request.args.get('category', 'mined')
     limit = int(request.args.get('limit', 10))
-    data = DetailStatsRepository.get_summary('block', category, limit)
+    server_name = request.args.get('server_name')
+    data = DetailStatsRepository.get_summary('block', category, limit,
+                                             server_name=server_name)
     return jsonify(data)
 
 
@@ -221,29 +304,35 @@ def get_block_summary():
 def get_battle_summary():
     category = request.args.get('category', 'killed')
     limit = int(request.args.get('limit', 10))
-    data = DetailStatsRepository.get_summary('battle', category, limit)
+    server_name = request.args.get('server_name')
+    data = DetailStatsRepository.get_summary('battle', category, limit,
+                                             server_name=server_name)
     return jsonify(data)
 
 
 @api_bp.route('/api/dates', methods=['GET'])
 def get_dates():
-    dates = MapSizeRepository.get_distinct_dates()
+    server_name = request.args.get('server_name')
+    dates = MapSizeRepository.get_distinct_dates(server_name=server_name)
     return jsonify(dates)
 
+
+# ==================== Delete ====================
 
 @api_bp.route('/api/delete_date', methods=['DELETE'])
 def delete_date():
     data = request.json
     date = data.get('date')
+    server_name = data.get('server_name')
 
     if not date:
         return jsonify({'error': '请提供日期'}), 400
 
     conn = get_connection()
 
-    map_deleted = MapSizeRepository.delete_by_date(date, conn)
-    player_deleted = PlayerStatsRepository.delete_by_date(date, conn)
-    detail_deleted = DetailStatsRepository.delete_by_date(date, conn)
+    map_deleted = MapSizeRepository.delete_by_date(date, server_name=server_name, conn=conn)
+    player_deleted = PlayerStatsRepository.delete_by_date(date, server_name=server_name, conn=conn)
+    detail_deleted = DetailStatsRepository.delete_by_date(date, server_name=server_name, conn=conn)
 
     conn.commit()
     conn.close()
@@ -261,6 +350,7 @@ def delete_date():
 def batch_delete():
     data = request.json
     dates = data.get('dates', [])
+    server_name = data.get('server_name')
 
     if not dates:
         return jsonify({'error': '请提供日期列表'}), 400
@@ -272,9 +362,9 @@ def batch_delete():
     total_detail = 0
 
     for date in dates:
-        map_deleted = MapSizeRepository.delete_by_date(date, conn)
-        player_deleted = PlayerStatsRepository.delete_by_date(date, conn)
-        detail_deleted = DetailStatsRepository.delete_by_date(date, conn)
+        map_deleted = MapSizeRepository.delete_by_date(date, server_name=server_name, conn=conn)
+        player_deleted = PlayerStatsRepository.delete_by_date(date, server_name=server_name, conn=conn)
+        detail_deleted = DetailStatsRepository.delete_by_date(date, server_name=server_name, conn=conn)
 
         total_map += map_deleted
         total_player += player_deleted
@@ -302,17 +392,33 @@ def batch_delete():
 
 @api_bp.route('/api/delete_all', methods=['DELETE'])
 def delete_all():
+    data = request.json or {}
+    server_name = data.get('server_name')
+
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT COUNT(*) FROM map_sizes')
-    map_count = cursor.fetchone()[0]
-    cursor.execute('SELECT COUNT(*) FROM player_stats')
-    player_count = cursor.fetchone()[0]
-    cursor.execute('SELECT COUNT(*) FROM detail_stats')
-    detail_count = cursor.fetchone()[0]
-    cursor.execute('DELETE FROM map_sizes')
-    cursor.execute('DELETE FROM player_stats')
-    cursor.execute('DELETE FROM detail_stats')
+
+    if server_name:
+        cursor.execute('SELECT COUNT(*) FROM map_sizes WHERE server_name = ?', (server_name,))
+        map_count = cursor.fetchone()[0]
+        cursor.execute('SELECT COUNT(*) FROM player_stats WHERE server_name = ?', (server_name,))
+        player_count = cursor.fetchone()[0]
+        cursor.execute('SELECT COUNT(*) FROM detail_stats WHERE server_name = ?', (server_name,))
+        detail_count = cursor.fetchone()[0]
+        cursor.execute('DELETE FROM map_sizes WHERE server_name = ?', (server_name,))
+        cursor.execute('DELETE FROM player_stats WHERE server_name = ?', (server_name,))
+        cursor.execute('DELETE FROM detail_stats WHERE server_name = ?', (server_name,))
+    else:
+        cursor.execute('SELECT COUNT(*) FROM map_sizes')
+        map_count = cursor.fetchone()[0]
+        cursor.execute('SELECT COUNT(*) FROM player_stats')
+        player_count = cursor.fetchone()[0]
+        cursor.execute('SELECT COUNT(*) FROM detail_stats')
+        detail_count = cursor.fetchone()[0]
+        cursor.execute('DELETE FROM map_sizes')
+        cursor.execute('DELETE FROM player_stats')
+        cursor.execute('DELETE FROM detail_stats')
+
     conn.commit()
     conn.close()
 
@@ -323,6 +429,8 @@ def delete_all():
         'total_detail_deleted': detail_count,
     })
 
+
+# ==================== Export ====================
 
 @api_bp.route('/api/export', methods=['POST'])
 def export_data():
@@ -341,6 +449,8 @@ def export_data():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+# ==================== Batch Scan ====================
+
 @api_bp.route('/api/batch_scan', methods=['POST'])
 def batch_scan():
     data = request.json
@@ -349,8 +459,10 @@ def batch_scan():
     if not parent_folder or not os.path.exists(parent_folder):
         return jsonify({'error': '父文件夹不存在'}), 400
 
+    server_name = data.get('server_name', 'default')
     filter_config = data.get('filter_config', {})
-    result = batch_scan_parent_folder(parent_folder, filter_config=filter_config)
+    result = batch_scan_parent_folder(parent_folder, server_name=server_name,
+                                      filter_config=filter_config)
     if 'error' in result:
         return jsonify(result), 500
     return jsonify(result)
@@ -389,6 +501,7 @@ def batch_scan_stream():
     if not parent_folder or not os.path.exists(parent_folder):
         return jsonify({'error': '父文件夹不存在'}), 400
 
+    server_name = data.get('server_name', 'default')
     filter_config = data.get('filter_config', {})
     scan_mode = data.get('scan_mode', 'folder')
 
@@ -436,7 +549,8 @@ def batch_scan_stream():
                     stats_contents = archive_data.get('stats', {})
 
                     result = scan_server_folder(
-                        '', date=date, filter_config=filter_config, conn=conn,
+                        '', date=date, server_name=server_name,
+                        filter_config=filter_config, conn=conn,
                         map_sizes_override=map_sizes,
                         usercache_override=uuid_to_name,
                         stats_contents_override=stats_contents,
@@ -453,7 +567,9 @@ def batch_scan_stream():
                             mtime = os.path.getmtime(item['path'])
                             date = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d')
 
-                    result = scan_server_folder(item['path'], date=date, filter_config=filter_config, conn=conn)
+                    result = scan_server_folder(item['path'], date=date,
+                                                server_name=server_name,
+                                                filter_config=filter_config, conn=conn)
 
                 if result.get('filtered_count', 0) > 0:
                     filtered_count += result['filtered_count']
@@ -473,6 +589,8 @@ def batch_scan_stream():
     })
 
 
+# ==================== Auto Scan ====================
+
 @api_bp.route('/api/auto_scan/config', methods=['GET'])
 def get_auto_scan_config_api():
     config = get_auto_scan_config()
@@ -480,6 +598,7 @@ def get_auto_scan_config_api():
     return jsonify({
         'enabled': config['enabled'],
         'folder': config['folder'],
+        'server_name': config.get('server_name', ''),
         'last_scan_time': status['last_scan_time'],
         'last_scan_success': status['last_scan_success'],
         'last_scan_date': status['last_scan_date'],
@@ -493,21 +612,25 @@ def update_auto_scan_config_api():
     data = request.json
     enabled = data.get('enabled')
     folder = data.get('folder')
+    server_name = data.get('server_name')
 
     if enabled is not None and not isinstance(enabled, bool):
         return jsonify({'error': 'enabled 必须为布尔值'}), 400
     if folder is not None and not isinstance(folder, str):
         return jsonify({'error': 'folder 必须为字符串'}), 400
+    if server_name is not None and not isinstance(server_name, str):
+        return jsonify({'error': 'server_name 必须为字符串'}), 400
 
     if enabled is True and folder is not None and folder.strip():
         if not os.path.exists(folder.strip()):
             return jsonify({'error': '指定的文件夹路径不存在'}), 400
 
-    config = update_auto_scan_config(enabled=enabled, folder=folder)
+    config = update_auto_scan_config(enabled=enabled, folder=folder, server_name=server_name)
     return jsonify({
         'success': True,
         'enabled': config['enabled'],
         'folder': config['folder'],
+        'server_name': config.get('server_name', ''),
     })
 
 
@@ -540,6 +663,7 @@ def batch_delete_stream():
 
     data = request.json
     dates_to_delete = data.get('dates', [])
+    server_name = data.get('server_name')
 
     if not dates_to_delete:
         return jsonify({'error': '请提供日期列表'}), 400
@@ -557,9 +681,9 @@ def batch_delete_stream():
         for i, date in enumerate(dates_to_delete):
             yield f"data: {_json.dumps({'type': 'progress', 'current': i + 1, 'total': total, 'date': date})}\n\n"
 
-            map_deleted = MapSizeRepository.delete_by_date(date, conn)
-            player_deleted = PlayerStatsRepository.delete_by_date(date, conn)
-            detail_deleted = DetailStatsRepository.delete_by_date(date, conn)
+            map_deleted = MapSizeRepository.delete_by_date(date, server_name=server_name, conn=conn)
+            player_deleted = PlayerStatsRepository.delete_by_date(date, server_name=server_name, conn=conn)
+            detail_deleted = DetailStatsRepository.delete_by_date(date, server_name=server_name, conn=conn)
 
             total_map += map_deleted
             total_player += player_deleted

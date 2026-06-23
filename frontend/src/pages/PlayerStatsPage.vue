@@ -47,7 +47,7 @@ const STAT_TRANSFORM: Record<string, ((v: number) => number) | null> = {
 
 const data = useDataStore()
 const app = useAppStore()
-const filter = usePlayerFilter(data.allPlayers)
+const filter = usePlayerFilter(() => data.allPlayers)
 const dateRange = useDateRange(() => data.allDates)
 const currentKey = ref<string>('play_time')
 

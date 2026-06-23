@@ -1,31 +1,37 @@
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useAppStore } from '@/stores/app'
 
-export function usePlayerFilter(allPlayers: Set<string>) {
+export function usePlayerFilter(allPlayers: () => Set<string>) {
   const selected = ref<Set<string>>(new Set<string>())
 
   const sortedPlayers = computed(() =>
-    Array.from(allPlayers).sort()
+    Array.from(allPlayers()).sort()
   )
 
   function init() {
     const app = useAppStore()
     const defaults = app.defaultSelectedPlayers
+    const players = allPlayers()
     if (defaults.length > 0) {
-      selected.value.clear()
+      selected.value = new Set<string>()
       for (const p of defaults) {
-        if (allPlayers.has(p)) {
+        if (players.has(p)) {
           selected.value.add(p)
         }
       }
       if (selected.value.size === 0) {
-        allPlayers.forEach(p => selected.value.add(p))
+        players.forEach(p => selected.value.add(p))
       }
     } else {
-      selected.value.clear()
-      allPlayers.forEach(p => selected.value.add(p))
+      selected.value = new Set<string>()
+      players.forEach(p => selected.value.add(p))
     }
   }
+
+  // Auto re-init when player set changes (e.g. server switch)
+  watch(() => allPlayers().size, () => {
+    init()
+  })
 
   function toggle(player: string) {
     if (selected.value.has(player)) {
@@ -40,7 +46,7 @@ export function usePlayerFilter(allPlayers: Set<string>) {
   }
 
   function selectAll() {
-    allPlayers.forEach(p => selected.value.add(p))
+    allPlayers().forEach(p => selected.value.add(p))
   }
 
   function deselectAll() {

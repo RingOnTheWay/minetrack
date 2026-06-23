@@ -93,7 +93,7 @@ def parse_date_from_server_properties(server_folder: str) -> str:
     return _parse_date_from_content(content)
 
 
-def scan_map_sizes(server_folder: str, date: str,
+def scan_map_sizes(server_folder: str, date: str, server_name: str = 'default',
                    conn: Optional[sqlite3.Connection] = None) -> list:
     close_conn = conn is None
     if close_conn:
@@ -105,7 +105,7 @@ def scan_map_sizes(server_folder: str, date: str,
             map_path = os.path.join(server_folder, path)
             if os.path.exists(map_path):
                 size_mb = get_folder_size(map_path)
-                MapSizeRepository.insert_or_replace(date, map_name, size_mb, conn)
+                MapSizeRepository.insert_or_replace(server_name, date, map_name, size_mb, conn)
                 map_data.append({'name': map_name, 'size': round(size_mb, 2)})
                 break
 
@@ -135,6 +135,7 @@ def should_include_player(player_name: str, play_time_seconds: int,
 
 
 def scan_server_folder(server_folder: str, date: str = None,
+                       server_name: str = 'default',
                        filter_config: dict = None,
                        conn: Optional[sqlite3.Connection] = None,
                        map_sizes_override: list = None,
@@ -158,9 +159,9 @@ def scan_server_folder(server_folder: str, date: str = None,
     if map_sizes_override is not None:
         map_data = map_sizes_override
         for ms in map_data:
-            MapSizeRepository.insert_or_replace(date, ms['name'], ms['size'], conn)
+            MapSizeRepository.insert_or_replace(server_name, date, ms['name'], ms['size'], conn)
     else:
-        map_data = scan_map_sizes(server_folder, date, conn)
+        map_data = scan_map_sizes(server_folder, date, server_name, conn)
 
     if stats_contents_override is not None:
         player_stats, all_details = parse_all_stats_from_contents(stats_contents_override)
@@ -181,7 +182,7 @@ def scan_server_folder(server_folder: str, date: str = None,
             filtered_count += 1
             continue
         for stat_type, stat_value in stats.items():
-            player_rows.append((date, player_name, stat_type, stat_value))
+            player_rows.append((server_name, date, player_name, stat_type, stat_value))
 
     if player_rows:
         PlayerStatsRepository.insert_many(player_rows, conn)
@@ -199,7 +200,7 @@ def scan_server_folder(server_folder: str, date: str = None,
                 parts = stat_key.split(':', 1)
                 if len(parts) == 2:
                     stat_category, item_name = parts
-                    detail_rows.append((date, player_name, domain, stat_category, item_name, stat_value))
+                    detail_rows.append((server_name, date, player_name, domain, stat_category, item_name, stat_value))
                     detail_counts[domain] += 1
 
     if detail_rows:
@@ -251,6 +252,7 @@ def parse_date_from_folder_name(folder_name: str) -> str:
 
 
 def batch_scan_parent_folder(parent_folder: str,
+                             server_name: str = 'default',
                              filter_config: dict = None) -> dict:
     results = []
     errors = []
@@ -276,7 +278,8 @@ def batch_scan_parent_folder(parent_folder: str,
                     date = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d')
 
             try:
-                scan_result = scan_server_folder(item_path, date, filter_config=filter_config)
+                scan_result = scan_server_folder(item_path, date, server_name=server_name,
+                                                 filter_config=filter_config)
                 result_entry = {
                     'folder': folder_name,
                     'date': date,
@@ -314,6 +317,7 @@ def batch_scan_parent_folder(parent_folder: str,
 
 
 def scan_archive(archive_path: str, date: str = None,
+                 server_name: str = 'default',
                  filter_config: dict = None,
                  conn: Optional[sqlite3.Connection] = None) -> dict:
     reader = ArchiveReader(archive_path)
@@ -343,7 +347,7 @@ def scan_archive(archive_path: str, date: str = None,
     stats_contents = data.get('stats', {})
 
     result = scan_server_folder(
-        '', date=date, filter_config=filter_config, conn=conn,
+        '', date=date, server_name=server_name, filter_config=filter_config, conn=conn,
         map_sizes_override=map_sizes,
         usercache_override=uuid_to_name,
         stats_contents_override=stats_contents,
@@ -407,6 +411,7 @@ def _resolve_item_date(item: dict):
 
 
 def batch_scan_parent_folder_v2(parent_folder: str,
+                                 server_name: str = 'default',
                                  filter_config: dict = None) -> dict:
     results = []
     errors = []
@@ -417,10 +422,12 @@ def batch_scan_parent_folder_v2(parent_folder: str,
         for item in items:
             try:
                 if item['type'] == 'archive':
-                    scan_result = scan_archive(item['path'], filter_config=filter_config)
+                    scan_result = scan_archive(item['path'], server_name=server_name,
+                                               filter_config=filter_config)
                 else:
                     date = _resolve_item_date(item)
                     scan_result = scan_server_folder(item['path'], date,
+                                                     server_name=server_name,
                                                      filter_config=filter_config)
 
                 date = scan_result['date']

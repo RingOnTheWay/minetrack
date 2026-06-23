@@ -97,6 +97,11 @@ export const useDataStore = defineStore('data', () => {
   }
 
   async function loadFromAPI() {
+    const appStore = useAppStore()
+    const serverName = appStore.currentServer
+    if (!serverName) return
+
+    const sn = encodeURIComponent(serverName)
     const statTypes = ['play_time', 'deaths', 'mob_kills', 'player_kills', 'jumps',
       'distance_walked', 'sprint_one_cm', 'walk_one_cm', 'fly_one_cm', 'climb_one_cm',
       'swim_one_cm', 'horse_one_cm', 'boat_one_cm', 'aviate_one_cm', 'fall_one_cm',
@@ -107,22 +112,22 @@ export const useDataStore = defineStore('data', () => {
       'eat_cake_slice', 'sneak_time', 'leave_game']
 
     const playerStatsPromises = statTypes.map(async t => {
-      const r = await fetch(`/api/player_stats?type=${encodeURIComponent(t)}`)
+      const r = await fetch(`/api/player_stats?type=${encodeURIComponent(t)}&server_name=${sn}`)
       return { t, data: await r.json() }
     })
 
     const promises = [
-      fetch('/api/map_sizes').then(r => r.json()),
+      fetch(`/api/map_sizes?server_name=${sn}`).then(r => r.json()),
       Promise.all(playerStatsPromises),
-      fetch('/api/stats/battle?category=killed').then(r => r.json()),
-      fetch('/api/stats/battle?category=killed_by').then(r => r.json()),
-      fetch('/api/stats/craft?category=crafted').then(r => r.json()).catch(() => ({})),
-      fetch('/api/stats/craft?category=used').then(r => r.json()).catch(() => ({})),
-      fetch('/api/stats/item?category=picked_up').then(r => r.json()).catch(() => ({})),
-      fetch('/api/stats/item?category=dropped').then(r => r.json()).catch(() => ({})),
-      fetch('/api/stats/item?category=used').then(r => r.json()).catch(() => ({})),
-      fetch('/api/stats/block?category=mined').then(r => r.json()).catch(() => ({})),
-      fetch('/api/stats/block?category=broken').then(r => r.json()).catch(() => ({})),
+      fetch(`/api/stats/battle?category=killed&server_name=${sn}`).then(r => r.json()),
+      fetch(`/api/stats/battle?category=killed_by&server_name=${sn}`).then(r => r.json()),
+      fetch(`/api/stats/craft?category=crafted&server_name=${sn}`).then(r => r.json()).catch(() => ({})),
+      fetch(`/api/stats/craft?category=used&server_name=${sn}`).then(r => r.json()).catch(() => ({})),
+      fetch(`/api/stats/item?category=picked_up&server_name=${sn}`).then(r => r.json()).catch(() => ({})),
+      fetch(`/api/stats/item?category=dropped&server_name=${sn}`).then(r => r.json()).catch(() => ({})),
+      fetch(`/api/stats/item?category=used&server_name=${sn}`).then(r => r.json()).catch(() => ({})),
+      fetch(`/api/stats/block?category=mined&server_name=${sn}`).then(r => r.json()).catch(() => ({})),
+      fetch(`/api/stats/block?category=broken&server_name=${sn}`).then(r => r.json()).catch(() => ({})),
     ]
 
     const [ms, psArr, bk, bkBy, cc, cu, ip, id, iu, bm, bb] = await Promise.all(promises)
@@ -182,6 +187,13 @@ export const useDataStore = defineStore('data', () => {
         loadingMessage.value = '少女翻阅古籍中...'
         await loadStaticData()
       } else {
+        if (!appStore.serversLoaded) {
+          await appStore.loadServers()
+        }
+        if (!appStore.currentServer) {
+          loaded.value = true
+          return
+        }
         try {
           await loadFromAPI()
         } catch {

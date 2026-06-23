@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
+import { apiGet } from '@/services/api'
 
 export interface ThemeColor {
   name: string
@@ -217,6 +218,23 @@ export const useAppStore = defineStore('app', () => {
     return ''
   })())
 
+  const servers = ref<string[]>([])
+  const currentServer = ref<string>((() => {
+    try {
+      const stored = localStorage.getItem('currentServer')
+      if (stored !== null) return stored
+    } catch {}
+    return ''
+  })())
+  const serversLoaded = ref<boolean>(false)
+  const autoScanServerName = ref<string>((() => {
+    try {
+      const stored = localStorage.getItem('autoScanServerName')
+      if (stored !== null) return stored
+    } catch {}
+    return ''
+  })())
+
   const currentTheme = computed<ThemeColor>(() => findPreset(themeColorPrimary.value))
   const isLocal = computed(() => mode.value === 'local')
   const isStatic = computed(() => mode.value === 'static')
@@ -282,6 +300,33 @@ export const useAppStore = defineStore('app', () => {
 
   function setAutoScanFolder(val: string) {
     autoScanFolder.value = val
+  }
+
+  function setServers(list: string[]) {
+    servers.value = list
+  }
+
+  function setCurrentServer(name: string) {
+    currentServer.value = name
+  }
+
+  async function loadServers() {
+    try {
+      const list = await apiGet<string[]>('/api/servers')
+      servers.value = list
+      serversLoaded.value = true
+      if (list.length > 0 && !list.includes(currentServer.value)) {
+        currentServer.value = list[0]
+      } else if (list.length === 0) {
+        currentServer.value = ''
+      }
+    } catch {
+      serversLoaded.value = true
+    }
+  }
+
+  function setAutoScanServerName(val: string) {
+    autoScanServerName.value = val
   }
 
   watch(darkMode, (val) => {
@@ -359,6 +404,18 @@ export const useAppStore = defineStore('app', () => {
     } catch {}
   })
 
+  watch(currentServer, (val) => {
+    try {
+      localStorage.setItem('currentServer', val)
+    } catch {}
+  })
+
+  watch(autoScanServerName, (val) => {
+    try {
+      localStorage.setItem('autoScanServerName', val)
+    } catch {}
+  })
+
   function initialize() {
     const searchParams = new URLSearchParams(window.location.search)
     if (searchParams.get('mode') === 'static' || window.location.protocol === 'file:') {
@@ -405,6 +462,10 @@ export const useAppStore = defineStore('app', () => {
     blacklist,
     autoScanEnabled,
     autoScanFolder,
+    servers,
+    currentServer,
+    serversLoaded,
+    autoScanServerName,
     currentTheme,
     isLocal,
     isStatic,
@@ -427,5 +488,9 @@ export const useAppStore = defineStore('app', () => {
     setBlacklist,
     setAutoScanEnabled,
     setAutoScanFolder,
+    setServers,
+    setCurrentServer,
+    loadServers,
+    setAutoScanServerName,
   }
 })

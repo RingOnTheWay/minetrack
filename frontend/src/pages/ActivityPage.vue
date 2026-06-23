@@ -28,7 +28,7 @@ const ACTIVITY_LABELS: Record<string, string> = {
 
 const data = useDataStore()
 const app = useAppStore()
-const filter = usePlayerFilter(data.allPlayers)
+const filter = usePlayerFilter(() => data.allPlayers)
 const dateRange = useDateRange(() => data.allDates)
 const currentKey = ref<string>('sprint_one_cm')
 

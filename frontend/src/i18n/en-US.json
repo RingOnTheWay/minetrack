@@ -32,7 +32,8 @@
     "count": "Count",
     "item": "Item",
     "search": "Search...",
-    "growth": "growth"
+    "growth": "growth",
+    "switchServer": "Switch Server"
   },
   "dashboard": {
     "totalDays": "Total Days",
@@ -174,7 +175,22 @@
     "autoScanTriggerSuccess": "Scan successful",
     "autoScanLastStatus": "Last Scan Status",
     "autoScanLastTime": "Scan Time",
-    "autoScanLastDate": "Data Date"
+    "autoScanLastDate": "Data Date",
+    "serverManagement": "Server Management",
+    "serverManagementDesc": "Add, rename, or delete servers. Data for each server is independent.",
+    "addServer": "Add Server",
+    "serverName": "Server Name",
+    "serverNamePlaceholder": "Enter server name",
+    "renameServer": "Rename",
+    "deleteServer": "Delete",
+    "deleteServerConfirm": "Delete server \"{name}\"? All data for this server will be permanently deleted.",
+    "newServerName": "New Name",
+    "newServerNamePlaceholder": "Enter new name",
+    "noServers": "No servers yet. Please add one first.",
+    "selectServer": "Select Server",
+    "autoScanServer": "Scan Target Server",
+    "autoScanServerDesc": "Auto-scanned data will be assigned to the selected server",
+    "dragToReorder": "Drag to reorder"
   },
   "dateRange": {
     "allDates": "All Dates",

@@ -15,7 +15,7 @@ import { useDateRange } from '@/services/useDateRange'
 const { t, locale } = useI18n()
 const data = useDataStore()
 const app = useAppStore()
-const filter = usePlayerFilter(data.allPlayers)
+const filter = usePlayerFilter(() => data.allPlayers)
 const dateRange = useDateRange(() => data.allDates)
 const category = ref<'mined' | 'broken'>('mined')
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, provide, ref, watch } from 'vue'
+import { computed, provide, ref } from 'vue'
 import VChart from 'vue-echarts'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
@@ -55,6 +55,15 @@ const chartHeight = computed(() => {
   const base = parseInt(props.height) || 350
   const extra = Math.max(0, props.series.length - 5) * 10
   return `${base + extra}px`
+})
+
+const chartRef = ref<InstanceType<typeof VChart> | null>(null)
+
+// Key forces VChart to fully recreate when series composition changes.
+// This prevents stale legend items from ECharts' merge-mode setOption.
+const chartKey = computed(() => {
+  const names = props.series.map(s => s.name).join('|')
+  return `${app.currentServer}:${names}`
 })
 
 const option = computed(() => {
@@ -228,5 +237,5 @@ const option = computed(() => {
     </div>
     <span class="text-sm text-slate-400 dark:text-slate-500">{{ t('common.noData') }}</span>
   </div>
-  <VChart v-else :option="option" :style="{ height: chartHeight, width: '100%' }" autoresize />
+  <VChart v-else ref="chartRef" :key="chartKey" :option="option" :style="{ height: chartHeight, width: '100%' }" autoresize />
 </template>

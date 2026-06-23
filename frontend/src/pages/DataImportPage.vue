@@ -125,7 +125,11 @@ function openRangePicker() {
 
 async function loadDates() {
   datesLoading.value = true
-  try { dates.value = await apiGet<string[]>('/api/dates') }
+  try {
+    const params: Record<string, string> = {}
+    if (app.currentServer) params.server_name = app.currentServer
+    dates.value = await apiGet<string[]>('/api/dates', params)
+  }
   catch { dates.value = [] }
   finally { datesLoading.value = false }
 }
@@ -142,12 +146,13 @@ async function handleScan() {
   try {
     const filterConfig = getFilterConfig()
     const date = scanDate.value || undefined
+    const serverName = app.currentServer || 'default'
     if (scanMode.value === 'folder') {
-      const body: Record<string, any> = { folder: scanFolder.value.trim(), filter_config: filterConfig }
+      const body: Record<string, any> = { folder: scanFolder.value.trim(), filter_config: filterConfig, server_name: serverName }
       if (date) body.date = date
       scanResult.value = await apiPost('/api/scan', body)
     } else {
-      const body: Record<string, any> = { archive: scanArchive.value.trim(), filter_config: filterConfig }
+      const body: Record<string, any> = { archive: scanArchive.value.trim(), filter_config: filterConfig, server_name: serverName }
       if (date) body.date = date
       scanResult.value = await apiPost('/api/scan_archive', body)
     }
@@ -165,7 +170,7 @@ async function handleBatchScan() {
   abortController.value = new AbortController()
 
   try {
-    await consumeSSE('/api/batch_scan_stream', { parent_folder: batchFolder.value.trim(), filter_config: getFilterConfig(), scan_mode: batchScanMode.value }, {
+    await consumeSSE('/api/batch_scan_stream', { parent_folder: batchFolder.value.trim(), filter_config: getFilterConfig(), scan_mode: batchScanMode.value, server_name: app.currentServer || 'default' }, {
       signal: abortController.value.signal,
       onStart: (data) => {
         progressTotal.value = data.total
@@ -218,7 +223,7 @@ async function handleDeleteSingle() {
   deleteSingleLoading.value = true; deleteSingleResult.value = null; deleteSingleError.value = ''
   globalLoading.value = true; globalLoadingText.value = t('dataManage.deleteByDate'); progressTotal.value = 0
   try {
-    deleteSingleResult.value = await apiDelete('/api/delete_date', { date: deleteDate.value })
+    deleteSingleResult.value = await apiDelete('/api/delete_date', { date: deleteDate.value, server_name: app.currentServer })
     globalLoading.value = false
     await refreshAllData()
   } catch (e: any) { deleteSingleError.value = e.message || t('dataManage.operationFailed') }
@@ -234,7 +239,7 @@ async function handleBatchDelete() {
   globalLoading.value = true; globalLoadingText.value = t('dataManage.batchDelete')
 
   try {
-    await consumeSSE('/api/batch_delete_stream', { dates: datesToDelete }, {
+    await consumeSSE('/api/batch_delete_stream', { dates: datesToDelete, server_name: app.currentServer }, {
       onStart: (data) => { progressTotal.value = data.total },
       onProgress: (data) => {
         progressCurrent.value = data.current
@@ -266,7 +271,7 @@ async function handleDeleteAll() {
   globalLoading.value = true; globalLoadingText.value = t('dataManage.deleteAll'); progressTotal.value = 0
 
   try {
-    deleteAllResult.value = await apiDelete('/api/delete_all', {})
+    deleteAllResult.value = await apiDelete('/api/delete_all', { server_name: app.currentServer })
     globalLoading.value = false
     await refreshAllData()
   } catch (e: any) {
