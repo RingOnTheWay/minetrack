@@ -150,6 +150,9 @@
     "emptyList": "暂无",
     "addPlayerPlaceholder": "输入玩家名，按回车添加",
     "filterHint": "筛选优先级：白名单（保送）→ 黑名单（排除）→ 最小时长（过滤）。添加到白名单时将自动从黑名单移除，反之亦然。",
+    "filterTemplateHint": "此为全局默认模板，新增服务器时将自动复制此配置。各服务器可在导入页面独立调整。",
+    "applyToServer": "应用到当前服务器「{server}」",
+    "applyToServerSuccess": "已应用到当前服务器",
     "about": "关于",
     "aboutDesc": "应用与作者信息",
     "author": "作者",
@@ -275,7 +278,13 @@
     "filteredOut": "已过滤 {n} 人",
     "scanErrors": "扫描错误",
     "cancelScan": "终止扫描",
-    "scanAborted": "扫描已终止"
+    "scanAborted": "扫描已终止",
+    "serverFilter": "服务器筛选配置",
+    "serverFilterDesc": "当前服务器「{server}」的导入筛选规则",
+    "noServerSelected": "请先选择服务器",
+    "enableFilter": "启用筛选",
+    "filterOn": "已启用",
+    "filterOff": "未启用"
   },
   "honor": {
     "title": "荣誉称号",

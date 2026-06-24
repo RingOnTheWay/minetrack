@@ -122,11 +122,19 @@ onMounted(() => {
 })
 
 function toggleFilterEnabled() {
-  app.setFilterEnabled(!app.filterEnabled)
+  app.setGlobalFilterEnabled(!app.globalFilter.filterEnabled)
+}
+
+const applyFilterSuccess = ref(false)
+
+function applyFilterToServer() {
+  app.applyGlobalFilterToServer()
+  applyFilterSuccess.value = true
+  setTimeout(() => { applyFilterSuccess.value = false }, 2000)
 }
 
 function onMinPlaytimeChange() {
-  if (app.minPlaytimeHours < 0) app.setMinPlaytimeHours(0)
+  if (app.globalFilter.minPlaytimeHours < 0) app.setGlobalMinPlaytimeHours(0)
 }
 
 function onMaxLegendPlayersChange() {
@@ -138,31 +146,31 @@ function onMaxLegendPlayersChange() {
 function addToWhitelist(name: string) {
   const trimmed = name.trim()
   if (!trimmed) return
-  if (app.whitelist.includes(trimmed)) return
-  const newWhitelist = [...app.whitelist, trimmed]
-  const newBlacklist = app.blacklist.filter(p => p !== trimmed)
-  app.setWhitelist(newWhitelist)
-  app.setBlacklist(newBlacklist)
+  if (app.globalFilter.whitelist.includes(trimmed)) return
+  const newWhitelist = [...app.globalFilter.whitelist, trimmed]
+  const newBlacklist = app.globalFilter.blacklist.filter(p => p !== trimmed)
+  app.setGlobalWhitelist(newWhitelist)
+  app.setGlobalBlacklist(newBlacklist)
   whitelistInput.value = ''
 }
 
 function removeFromWhitelist(name: string) {
-  app.setWhitelist(app.whitelist.filter(p => p !== name))
+  app.setGlobalWhitelist(app.globalFilter.whitelist.filter(p => p !== name))
 }
 
 function addToBlacklist(name: string) {
   const trimmed = name.trim()
   if (!trimmed) return
-  if (app.blacklist.includes(trimmed)) return
-  const newBlacklist = [...app.blacklist, trimmed]
-  const newWhitelist = app.whitelist.filter(p => p !== trimmed)
-  app.setBlacklist(newBlacklist)
-  app.setWhitelist(newWhitelist)
+  if (app.globalFilter.blacklist.includes(trimmed)) return
+  const newBlacklist = [...app.globalFilter.blacklist, trimmed]
+  const newWhitelist = app.globalFilter.whitelist.filter(p => p !== trimmed)
+  app.setGlobalBlacklist(newBlacklist)
+  app.setGlobalWhitelist(newWhitelist)
   blacklistInput.value = ''
 }
 
 function removeFromBlacklist(name: string) {
-  app.setBlacklist(app.blacklist.filter(p => p !== name))
+  app.setGlobalBlacklist(app.globalFilter.blacklist.filter(p => p !== name))
 }
 
 function onWhitelistKeydown(e: KeyboardEvent) {
@@ -821,7 +829,7 @@ function onDragEnd() {
       <div class="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-brand/5 dark:from-brand/3 to-transparent rounded-full blur-3xl" />
 
       <div class="relative">
-        <div class="flex items-center justify-between" :class="app.filterEnabled ? 'mb-8' : ''">
+        <div class="flex items-center justify-between" :class="app.globalFilter.filterEnabled ? 'mb-8' : ''">
           <div class="flex items-center gap-4">
             <div class="w-12 h-12 bg-gradient-to-br from-brand/20 to-brand/10 rounded-xl flex items-center justify-center">
               <Filter class="w-6 h-6 text-brand dark:text-brand-light" />
@@ -834,17 +842,31 @@ function onDragEnd() {
 
           <button
             class="relative w-12 h-7 rounded-full transition-all duration-300"
-            :class="app.filterEnabled ? 'bg-brand' : 'bg-slate-300 dark:bg-slate-600'"
+            :class="app.globalFilter.filterEnabled ? 'bg-brand' : 'bg-slate-300 dark:bg-slate-600'"
             @click="toggleFilterEnabled"
           >
             <div
               class="absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-sm transition-all duration-300"
-              :class="app.filterEnabled ? 'left-5.5' : 'left-0.5'"
+              :class="app.globalFilter.filterEnabled ? 'left-5.5' : 'left-0.5'"
             />
           </button>
         </div>
 
-        <div v-if="app.filterEnabled" class="space-y-6">
+        <div v-if="app.globalFilter.filterEnabled" class="space-y-6">
+          <div class="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-xl">
+            <p class="text-xs text-blue-700 dark:text-blue-400">{{ t('settings.filterTemplateHint') }}</p>
+          </div>
+
+          <div v-if="app.currentServer" class="flex items-center gap-2">
+            <button
+              class="btn-brand inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all"
+              @click="applyFilterToServer()"
+            >
+              <Check class="w-3.5 h-3.5" />
+              {{ t('settings.applyToServer', { server: app.currentServer }) }}
+            </button>
+            <span v-if="applyFilterSuccess" class="text-xs text-emerald-600 dark:text-emerald-400 font-medium animate-pulse">{{ t('settings.applyToServerSuccess') }}</span>
+          </div>
           <div>
             <div class="flex items-center gap-2 mb-3">
               <Clock class="w-4 h-4 text-brand dark:text-brand-light" />
@@ -853,8 +875,8 @@ function onDragEnd() {
             <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">{{ t('settings.minPlaytimeDesc') }}</p>
             <div class="flex items-center gap-3">
               <input
-                :value="app.minPlaytimeHours"
-                @input="app.setMinPlaytimeHours(parseFloat(($event.target as HTMLInputElement).value) || 0)"
+                :value="app.globalFilter.minPlaytimeHours"
+                @input="app.setGlobalMinPlaytimeHours(parseFloat(($event.target as HTMLInputElement).value) || 0)"
                 type="number"
                 min="0"
                 step="0.5"
@@ -873,7 +895,7 @@ function onDragEnd() {
             <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">{{ t('settings.whitelistDesc') }}</p>
             <div class="flex flex-wrap gap-2 mb-2 min-h-[2rem]">
               <span
-                v-for="name in app.whitelist"
+                v-for="name in app.globalFilter.whitelist"
                 :key="'w-'+name"
                 class="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-medium rounded-lg border border-emerald-200 dark:border-emerald-800/50"
               >
@@ -882,7 +904,7 @@ function onDragEnd() {
                   <X class="w-3 h-3" />
                 </button>
               </span>
-              <span v-if="app.whitelist.length === 0" class="text-xs text-slate-400 dark:text-slate-500 italic">{{ t('settings.emptyList') }}</span>
+              <span v-if="app.globalFilter.whitelist.length === 0" class="text-xs text-slate-400 dark:text-slate-500 italic">{{ t('settings.emptyList') }}</span>
             </div>
             <div class="flex gap-2">
               <input
@@ -911,7 +933,7 @@ function onDragEnd() {
             <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">{{ t('settings.blacklistDesc') }}</p>
             <div class="flex flex-wrap gap-2 mb-2 min-h-[2rem]">
               <span
-                v-for="name in app.blacklist"
+                v-for="name in app.globalFilter.blacklist"
                 :key="'b-'+name"
                 class="inline-flex items-center gap-1 px-2.5 py-1 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-medium rounded-lg border border-red-200 dark:border-red-800/50"
               >
@@ -920,7 +942,7 @@ function onDragEnd() {
                   <X class="w-3 h-3" />
                 </button>
               </span>
-              <span v-if="app.blacklist.length === 0" class="text-xs text-slate-400 dark:text-slate-500 italic">{{ t('settings.emptyList') }}</span>
+              <span v-if="app.globalFilter.blacklist.length === 0" class="text-xs text-slate-400 dark:text-slate-500 italic">{{ t('settings.emptyList') }}</span>
             </div>
             <div class="flex gap-2">
               <input

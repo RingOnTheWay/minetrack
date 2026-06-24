@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { apiPost, apiDelete, apiGet, consumeSSE } from '@/services/api'
 import { useDataStore } from '@/stores/data'
 import { useAppStore } from '@/stores/app'
-import { Upload, Trash2, Database, Loader2, FolderOpen, Calendar, Play, HardDrive, ArrowLeft, Folder, Lock, FileArchive } from 'lucide-vue-next'
+import { Upload, Trash2, Database, Loader2, FolderOpen, Calendar, Play, HardDrive, ArrowLeft, Folder, Lock, FileArchive, Filter, ChevronDown, ChevronUp, Shield, ShieldOff, Clock, X, Plus } from 'lucide-vue-next'
 import DatePickerPopup from '@/components/DatePickerPopup.vue'
 
 const { t } = useI18n()
@@ -63,6 +63,56 @@ const globalLoadingSubText = ref('')
 const progressCurrent = ref(0)
 const progressTotal = ref(0)
 const abortController = ref<AbortController | null>(null)
+
+const showFilterPanel = ref(false)
+const filterWhitelistInput = ref('')
+const filterBlacklistInput = ref('')
+
+function toggleFilterPanel() {
+  showFilterPanel.value = !showFilterPanel.value
+}
+
+function addToServerWhitelist(name: string) {
+  const trimmed = name.trim()
+  if (!trimmed) return
+  if (app.whitelist.includes(trimmed)) return
+  const newWl = [...app.whitelist, trimmed]
+  const newBl = app.blacklist.filter(p => p !== trimmed)
+  app.setWhitelist(newWl)
+  app.setBlacklist(newBl)
+  filterWhitelistInput.value = ''
+}
+
+function removeFromServerWhitelist(name: string) {
+  app.setWhitelist(app.whitelist.filter(p => p !== name))
+}
+
+function addToServerBlacklist(name: string) {
+  const trimmed = name.trim()
+  if (!trimmed) return
+  if (app.blacklist.includes(trimmed)) return
+  const newBl = [...app.blacklist, trimmed]
+  const newWl = app.whitelist.filter(p => p !== trimmed)
+  app.setBlacklist(newBl)
+  app.setWhitelist(newWl)
+  filterBlacklistInput.value = ''
+}
+
+function removeFromServerBlacklist(name: string) {
+  app.setBlacklist(app.blacklist.filter(p => p !== name))
+}
+
+function onFilterWhitelistKeydown(e: KeyboardEvent) {
+  if (e.key === 'Enter') { e.preventDefault(); addToServerWhitelist(filterWhitelistInput.value) }
+}
+
+function onFilterBlacklistKeydown(e: KeyboardEvent) {
+  if (e.key === 'Enter') { e.preventDefault(); addToServerBlacklist(filterBlacklistInput.value) }
+}
+
+function onServerMinPlaytimeChange() {
+  if (app.minPlaytimeHours < 0) app.setMinPlaytimeHours(0)
+}
 
 onMounted(() => { loadDates(); document.addEventListener('click', handleClickOutside); document.addEventListener('scroll', handleScroll, true) })
 onBeforeUnmount(() => { document.removeEventListener('click', handleClickOutside); document.removeEventListener('scroll', handleScroll, true) })
@@ -409,6 +459,109 @@ function selectArchiveAndClose(archivePath: string) {
     </div>
 
     <div v-if="activeTab === 'import'" class="space-y-6">
+      <!-- 服务器筛选配置 -->
+      <div class="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl border border-white/80 dark:border-slate-700/80 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
+        <button
+          class="w-full flex items-center justify-between p-5 md:p-8"
+          @click="toggleFilterPanel"
+        >
+          <div class="flex items-center gap-2 md:gap-4">
+            <div class="w-12 h-12 bg-gradient-to-br from-brand/20 dark:from-brand/20 to-brand/10 dark:to-brand/15 rounded-xl flex items-center justify-center">
+              <Filter class="w-6 h-6 text-brand dark:text-brand-light" />
+            </div>
+            <div class="text-left">
+              <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">{{ t('dataManage.serverFilter') }}</h3>
+              <p class="text-sm text-slate-500 dark:text-slate-400">
+                <template v-if="app.currentServer">{{ t('dataManage.serverFilterDesc', { server: app.currentServer }) }}</template>
+                <template v-else>{{ t('dataManage.noServerSelected') }}</template>
+              </p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span v-if="app.filterEnabled" class="px-2.5 py-1 bg-brand/10 dark:bg-brand/20 text-brand dark:text-brand-light text-xs font-medium rounded-lg">{{ t('dataManage.filterOn') }}</span>
+            <span v-else class="px-2.5 py-1 bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 text-xs font-medium rounded-lg">{{ t('dataManage.filterOff') }}</span>
+            <ChevronDown v-if="!showFilterPanel" class="w-5 h-5 text-slate-400" />
+            <ChevronUp v-else class="w-5 h-5 text-slate-400" />
+          </div>
+        </button>
+
+        <div v-if="showFilterPanel" class="px-5 md:px-8 pb-5 md:pb-8 space-y-5 border-t border-slate-100 dark:border-slate-700 pt-5">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <Filter class="w-4 h-4 text-brand dark:text-brand-light" />
+              <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('dataManage.enableFilter') }}</label>
+            </div>
+            <button
+              class="relative w-12 h-7 rounded-full transition-all duration-300"
+              :class="app.filterEnabled ? 'bg-brand' : 'bg-slate-300 dark:bg-slate-600'"
+              @click="app.setFilterEnabled(!app.filterEnabled)"
+            >
+              <div
+                class="absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-sm transition-all duration-300"
+                :class="app.filterEnabled ? 'left-5.5' : 'left-0.5'"
+              />
+            </button>
+          </div>
+
+          <template v-if="app.filterEnabled">
+            <div>
+              <div class="flex items-center gap-2 mb-2">
+                <Clock class="w-4 h-4 text-brand dark:text-brand-light" />
+                <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('settings.minPlaytime') }}</label>
+              </div>
+              <div class="flex items-center gap-3">
+                <input
+                  :value="app.minPlaytimeHours"
+                  @input="app.setMinPlaytimeHours(parseFloat(($event.target as HTMLInputElement).value) || 0)"
+                  type="number" min="0" step="0.5"
+                  class="w-32 px-4 py-2.5 bg-white/80 dark:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-xl text-sm dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand/40 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  @change="onServerMinPlaytimeChange"
+                />
+                <span class="text-sm text-slate-500 dark:text-slate-400">{{ t('settings.hours') }}</span>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex items-center gap-2 mb-2">
+                <Shield class="w-4 h-4 text-emerald-500" />
+                <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('settings.whitelist') }}</label>
+              </div>
+              <div class="flex flex-wrap gap-2 mb-2 min-h-[2rem]">
+                <span v-for="name in app.whitelist" :key="'sw-'+name" class="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-medium rounded-lg border border-emerald-200 dark:border-emerald-800/50">
+                  {{ name }}
+                  <button class="hover:text-emerald-900 dark:hover:text-emerald-200 transition-colors" @click="removeFromServerWhitelist(name)"><X class="w-3 h-3" /></button>
+                </span>
+                <span v-if="app.whitelist.length === 0" class="text-xs text-slate-400 dark:text-slate-500 italic">{{ t('settings.emptyList') }}</span>
+              </div>
+              <div class="flex gap-2">
+                <input v-model="filterWhitelistInput" type="text" :placeholder="t('settings.addPlayerPlaceholder')" class="flex-1 px-3 py-2 bg-white/80 dark:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-lg text-sm dark:text-slate-200 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand/40 transition-all" @keydown="onFilterWhitelistKeydown" />
+                <button class="px-3 py-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-lg transition-all text-sm font-medium disabled:opacity-50" :disabled="!filterWhitelistInput.trim()" @click="addToServerWhitelist(filterWhitelistInput)"><Plus class="w-4 h-4" /></button>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex items-center gap-2 mb-2">
+                <ShieldOff class="w-4 h-4 text-red-500" />
+                <label class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('settings.blacklist') }}</label>
+              </div>
+              <div class="flex flex-wrap gap-2 mb-2 min-h-[2rem]">
+                <span v-for="name in app.blacklist" :key="'sb-'+name" class="inline-flex items-center gap-1 px-2.5 py-1 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-medium rounded-lg border border-red-200 dark:border-red-800/50">
+                  {{ name }}
+                  <button class="hover:text-red-900 dark:hover:text-red-200 transition-colors" @click="removeFromServerBlacklist(name)"><X class="w-3 h-3" /></button>
+                </span>
+                <span v-if="app.blacklist.length === 0" class="text-xs text-slate-400 dark:text-slate-500 italic">{{ t('settings.emptyList') }}</span>
+              </div>
+              <div class="flex gap-2">
+                <input v-model="filterBlacklistInput" type="text" :placeholder="t('settings.addPlayerPlaceholder')" class="flex-1 px-3 py-2 bg-white/80 dark:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-lg text-sm dark:text-slate-200 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand/40 transition-all" @keydown="onFilterBlacklistKeydown" />
+                <button class="px-3 py-2 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-lg transition-all text-sm font-medium disabled:opacity-50" :disabled="!filterBlacklistInput.trim()" @click="addToServerBlacklist(filterBlacklistInput)"><Plus class="w-4 h-4" /></button>
+              </div>
+            </div>
+
+            <p class="text-xs text-slate-400 dark:text-slate-500">{{ t('settings.filterHint') }}</p>
+          </template>
+        </div>
+      </div>
+
       <div class="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-5 md:p-8 border border-white/80 dark:border-slate-700/80 shadow-sm hover:shadow-lg transition-all duration-300 group">
         <div class="flex flex-wrap items-center gap-2 md:gap-4 mb-6">
           <div class="w-12 h-12 bg-gradient-to-br from-brand/20 dark:from-brand/20 to-brand/10 dark:to-brand/15 rounded-xl flex items-center justify-center">

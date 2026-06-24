@@ -119,6 +119,54 @@ function loadNavVisibility(): Record<NavKey, boolean> {
   return { ...DEFAULT_NAV_VISIBILITY }
 }
 
+export interface FilterConfig {
+  filterEnabled: boolean
+  minPlaytimeHours: number
+  whitelist: string[]
+  blacklist: string[]
+}
+
+const DEFAULT_FILTER: FilterConfig = {
+  filterEnabled: false,
+  minPlaytimeHours: 1,
+  whitelist: [],
+  blacklist: [],
+}
+
+function loadGlobalFilter(): FilterConfig {
+  try {
+    const enabled = localStorage.getItem('filterEnabled')
+    const hours = localStorage.getItem('minPlaytimeHours')
+    const wl = localStorage.getItem('whitelist')
+    const bl = localStorage.getItem('blacklist')
+    return {
+      filterEnabled: enabled !== null ? enabled === 'true' : DEFAULT_FILTER.filterEnabled,
+      minPlaytimeHours: hours !== null ? parseFloat(hours) || DEFAULT_FILTER.minPlaytimeHours : DEFAULT_FILTER.minPlaytimeHours,
+      whitelist: wl !== null ? JSON.parse(wl) : DEFAULT_FILTER.whitelist,
+      blacklist: bl !== null ? JSON.parse(bl) : DEFAULT_FILTER.blacklist,
+    }
+  } catch {
+    return { ...DEFAULT_FILTER }
+  }
+}
+
+function loadServerFilter(serverName: string): FilterConfig {
+  if (!serverName) return loadGlobalFilter()
+  try {
+    const stored = localStorage.getItem(`filter_config_${serverName}`)
+    if (stored !== null) return JSON.parse(stored)
+  } catch {}
+  // 新服务器从全局模板复制
+  return { ...loadGlobalFilter() }
+}
+
+function saveServerFilter(serverName: string, config: FilterConfig) {
+  if (!serverName) return
+  try {
+    localStorage.setItem(`filter_config_${serverName}`, JSON.stringify(config))
+  } catch {}
+}
+
 export const useAppStore = defineStore('app', () => {
   const mode = ref<'local' | 'static'>('local')
   const loading = ref(false)
@@ -170,37 +218,16 @@ export const useAppStore = defineStore('app', () => {
     return []
   })())
 
-  const filterEnabled = ref<boolean>((() => {
-    try {
-      const stored = localStorage.getItem('filterEnabled')
-      if (stored !== null) return stored === 'true'
-    } catch {}
-    return false
-  })())
+  // 全局默认 filter（设置页模板）
+  const globalFilter = ref<FilterConfig>(loadGlobalFilter())
 
-  const minPlaytimeHours = ref<number>((() => {
-    try {
-      const stored = localStorage.getItem('minPlaytimeHours')
-      if (stored !== null) return parseFloat(stored) || 1
-    } catch {}
-    return 1
-  })())
+  // 兼容旧代码的 computed 属性（serverFilter 在 currentServer 之后初始化）
+  const serverFilter = ref<FilterConfig>({ ...DEFAULT_FILTER })
 
-  const whitelist = ref<string[]>((() => {
-    try {
-      const stored = localStorage.getItem('whitelist')
-      if (stored !== null) return JSON.parse(stored)
-    } catch {}
-    return []
-  })())
-
-  const blacklist = ref<string[]>((() => {
-    try {
-      const stored = localStorage.getItem('blacklist')
-      if (stored !== null) return JSON.parse(stored)
-    } catch {}
-    return []
-  })())
+  const filterEnabled = computed(() => serverFilter.value.filterEnabled)
+  const minPlaytimeHours = computed(() => serverFilter.value.minPlaytimeHours)
+  const whitelist = computed(() => serverFilter.value.whitelist)
+  const blacklist = computed(() => serverFilter.value.blacklist)
 
   const autoScanEnabled = ref<boolean>((() => {
     try {
@@ -227,6 +254,8 @@ export const useAppStore = defineStore('app', () => {
     return ''
   })())
   const serversLoaded = ref<boolean>(false)
+  // currentServer 已定义，现在初始化 serverFilter
+  serverFilter.value = loadServerFilter(currentServer.value || '')
   const autoScanServerName = ref<string>((() => {
     try {
       const stored = localStorage.getItem('autoScanServerName')
@@ -279,19 +308,65 @@ export const useAppStore = defineStore('app', () => {
   }
 
   function setFilterEnabled(val: boolean) {
-    filterEnabled.value = val
+    serverFilter.value = { ...serverFilter.value, filterEnabled: val }
+    saveServerFilter(currentServer.value, serverFilter.value)
   }
 
   function setMinPlaytimeHours(val: number) {
-    minPlaytimeHours.value = val
+    serverFilter.value = { ...serverFilter.value, minPlaytimeHours: val }
+    saveServerFilter(currentServer.value, serverFilter.value)
   }
 
   function setWhitelist(val: string[]) {
-    whitelist.value = val
+    serverFilter.value = { ...serverFilter.value, whitelist: val }
+    saveServerFilter(currentServer.value, serverFilter.value)
   }
 
   function setBlacklist(val: string[]) {
-    blacklist.value = val
+    serverFilter.value = { ...serverFilter.value, blacklist: val }
+    saveServerFilter(currentServer.value, serverFilter.value)
+  }
+
+  // 全局 filter setter（设置页模板）
+  function setGlobalFilterEnabled(val: boolean) {
+    globalFilter.value = { ...globalFilter.value, filterEnabled: val }
+    persistGlobalFilter()
+  }
+
+  function setGlobalMinPlaytimeHours(val: number) {
+    globalFilter.value = { ...globalFilter.value, minPlaytimeHours: val }
+    persistGlobalFilter()
+  }
+
+  function setGlobalWhitelist(val: string[]) {
+    globalFilter.value = { ...globalFilter.value, whitelist: val }
+    persistGlobalFilter()
+  }
+
+  function setGlobalBlacklist(val: string[]) {
+    globalFilter.value = { ...globalFilter.value, blacklist: val }
+    persistGlobalFilter()
+  }
+
+  function persistGlobalFilter() {
+    try {
+      localStorage.setItem('filterEnabled', String(globalFilter.value.filterEnabled))
+      localStorage.setItem('minPlaytimeHours', String(globalFilter.value.minPlaytimeHours))
+      localStorage.setItem('whitelist', JSON.stringify(globalFilter.value.whitelist))
+      localStorage.setItem('blacklist', JSON.stringify(globalFilter.value.blacklist))
+    } catch {}
+  }
+
+  // 将全局模板应用到当前服务器
+  function applyGlobalFilterToServer() {
+    serverFilter.value = { ...globalFilter.value }
+    saveServerFilter(currentServer.value, serverFilter.value)
+  }
+
+  // 将当前服务器配置应用到全局模板
+  function applyServerFilterToGlobal() {
+    globalFilter.value = { ...serverFilter.value }
+    persistGlobalFilter()
   }
 
   function setAutoScanEnabled(val: boolean) {
@@ -368,30 +443,6 @@ export const useAppStore = defineStore('app', () => {
     } catch {}
   }, { deep: true })
 
-  watch(filterEnabled, (val) => {
-    try {
-      localStorage.setItem('filterEnabled', String(val))
-    } catch {}
-  })
-
-  watch(minPlaytimeHours, (val) => {
-    try {
-      localStorage.setItem('minPlaytimeHours', String(val))
-    } catch {}
-  })
-
-  watch(whitelist, (val) => {
-    try {
-      localStorage.setItem('whitelist', JSON.stringify(val))
-    } catch {}
-  }, { deep: true })
-
-  watch(blacklist, (val) => {
-    try {
-      localStorage.setItem('blacklist', JSON.stringify(val))
-    } catch {}
-  }, { deep: true })
-
   watch(autoScanEnabled, (val) => {
     try {
       localStorage.setItem('autoScanEnabled', String(val))
@@ -408,6 +459,8 @@ export const useAppStore = defineStore('app', () => {
     try {
       localStorage.setItem('currentServer', val)
     } catch {}
+    // 切换服务器时加载对应 filter 配置
+    serverFilter.value = loadServerFilter(val || '')
   })
 
   watch(autoScanServerName, (val) => {
@@ -460,6 +513,8 @@ export const useAppStore = defineStore('app', () => {
     minPlaytimeHours,
     whitelist,
     blacklist,
+    globalFilter,
+    serverFilter,
     autoScanEnabled,
     autoScanFolder,
     servers,
@@ -486,6 +541,12 @@ export const useAppStore = defineStore('app', () => {
     setMinPlaytimeHours,
     setWhitelist,
     setBlacklist,
+    setGlobalFilterEnabled,
+    setGlobalMinPlaytimeHours,
+    setGlobalWhitelist,
+    setGlobalBlacklist,
+    applyGlobalFilterToServer,
+    applyServerFilterToGlobal,
     setAutoScanEnabled,
     setAutoScanFolder,
     setServers,

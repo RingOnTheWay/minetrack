@@ -150,6 +150,9 @@
     "emptyList": "Empty",
     "addPlayerPlaceholder": "Enter player name, press Enter to add",
     "filterHint": "Filter priority: Whitelist (always include) → Blacklist (always exclude) → Minimum playtime (filter). Adding to whitelist auto-removes from blacklist and vice versa.",
+    "filterTemplateHint": "This is the global default template. New servers will automatically copy this config. Each server can be adjusted independently on the import page.",
+    "applyToServer": "Apply to current server \"{server}\"",
+    "applyToServerSuccess": "Applied to current server",
     "about": "About",
     "aboutDesc": "App and author information",
     "author": "Author",
@@ -275,7 +278,13 @@
     "filteredOut": "{n} filtered out",
     "scanErrors": "Scan Errors",
     "cancelScan": "Cancel Scan",
-    "scanAborted": "Scan cancelled"
+    "scanAborted": "Scan cancelled",
+    "serverFilter": "Server Filter Config",
+    "serverFilterDesc": "Import filter rules for server \"{server}\"",
+    "noServerSelected": "Please select a server first",
+    "enableFilter": "Enable Filter",
+    "filterOn": "On",
+    "filterOff": "Off"
   },
   "honor": {
     "title": "Honor Titles",
