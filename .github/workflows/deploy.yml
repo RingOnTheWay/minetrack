@@ -45,6 +45,9 @@ jobs:
       - name: Copy data.json
         run: cp data.json frontend/dist/data.json
 
+      - name: Copy servers.json
+        run: cp servers.json frontend/dist/servers.json
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

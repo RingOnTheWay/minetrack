@@ -142,9 +142,45 @@ export const useDataStore = defineStore('data', () => {
     blockStats.value = { mined: bm || {}, broken: bb || {} }
   }
 
+  let staticDataCache: any = null
+
   async function loadStaticData() {
     const r = await fetch('data.json')
     const data = await r.json()
+    staticDataCache = data
+
+    applyStaticData(data)
+  }
+
+  function applyStaticData(data: any) {
+    // New format: { servers: { [name]: { map_sizes, player_stats, detail_stats } } }
+    if (data.servers) {
+      const appStore = useAppStore()
+      const serverNames = Object.keys(data.servers)
+      appStore.setServers(serverNames)
+      appStore.serversLoaded = true
+
+      // Pick current server: saved preference, or first available
+      let target = appStore.currentServer
+      if (!target || !serverNames.includes(target)) {
+        target = serverNames[0] || ''
+        appStore.setCurrentServer(target)
+      }
+
+      const sd = data.servers[target] || {}
+      mapSizes.value = sd.map_sizes || {}
+      playerStats.value = sd.player_stats || {}
+      if (sd.detail_stats) {
+        const ds = sd.detail_stats
+        if (ds.battle) battleStats.value = ds.battle as any
+        if (ds.craft) craftStats.value = ds.craft as any
+        if (ds.item) itemStats.value = ds.item as any
+        if (ds.block) blockStats.value = ds.block as any
+      }
+      return
+    }
+
+    // Legacy format: flat structure (no server grouping)
     mapSizes.value = data.map_sizes || {}
     playerStats.value = data.player_stats || {}
     if (data.battle_stats) battleStats.value = data.battle_stats
@@ -157,6 +193,13 @@ export const useDataStore = defineStore('data', () => {
       if (ds.craft) craftStats.value = ds.craft as any
       if (ds.item) itemStats.value = ds.item as any
       if (ds.block) blockStats.value = ds.block as any
+    }
+  }
+
+  function switchStaticServer() {
+    if (staticDataCache) {
+      applyStaticData(staticDataCache)
+      extractMetadata()
     }
   }
 
@@ -218,6 +261,6 @@ export const useDataStore = defineStore('data', () => {
   return {
     mapSizes, playerStats, battleStats, craftStats, itemStats, blockStats,
     allDates, allPlayers, loading, loaded, loadingMessage,
-    loadAll, reload,
+    loadAll, reload, switchStaticServer,
   }
 })

@@ -78,7 +78,11 @@ async function switchServer(name: string) {
   serverDropdownOpen.value = false
   if (name === app.currentServer) return
   app.setCurrentServer(name)
-  await data.reload()
+  if (app.isStatic) {
+    data.switchStaticServer()
+  } else {
+    await data.reload()
+  }
 }
 
 function handleClickOutside(e: MouseEvent) {
