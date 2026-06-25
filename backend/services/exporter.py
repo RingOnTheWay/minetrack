@@ -1,10 +1,10 @@
 import json
-import sqlite3
 from datetime import datetime
 from pathlib import Path
 
-from backend.config import DB_FILE, DATA_JSON
+from backend.config import DATA_JSON
 from backend.database.repositories import (
+    ServerRepository,
     MapSizeRepository,
     PlayerStatsRepository,
     DetailStatsRepository,
@@ -13,23 +13,10 @@ from backend.database.repositories import (
 SERVERS_JSON = str(Path(DATA_JSON).parent / 'servers.json')
 
 
-def get_distinct_server_names() -> list[str]:
-    """Get all distinct server_name values from data tables."""
-    conn = sqlite3.connect(DB_FILE)
-    rows = conn.execute(
-        'SELECT DISTINCT server_name FROM ('
-        '  SELECT server_name FROM map_sizes UNION'
-        '  SELECT server_name FROM player_stats UNION'
-        '  SELECT server_name FROM detail_stats'
-        ') ORDER BY server_name'
-    ).fetchall()
-    conn.close()
-    return [row[0] for row in rows]
-
-
 def export_by_server() -> dict:
-    """Export data grouped by server name."""
-    server_names = get_distinct_server_names()
+    """Export data grouped by server name from servers table."""
+    server_names = ServerRepository.get_all()
+
     result: dict = {'exported_at': datetime.now().isoformat(), 'servers': {}}
 
     for name in server_names:
@@ -39,7 +26,7 @@ def export_by_server() -> dict:
             'detail_stats': DetailStatsRepository.get_all(name),
         }
 
-    # Fallback: if no data at all, create empty default
+    # Fallback: if no servers at all, create empty default
     if not result['servers']:
         result['servers']['default'] = {
             'map_sizes': {},
