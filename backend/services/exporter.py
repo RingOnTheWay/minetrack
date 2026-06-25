@@ -1,11 +1,10 @@
 import json
-import os
+import sqlite3
 from datetime import datetime
 from pathlib import Path
 
 from backend.config import DB_FILE, DATA_JSON
 from backend.database.repositories import (
-    ServerRepository,
     MapSizeRepository,
     PlayerStatsRepository,
     DetailStatsRepository,
@@ -14,45 +13,39 @@ from backend.database.repositories import (
 SERVERS_JSON = str(Path(DATA_JSON).parent / 'servers.json')
 
 
-def export_all() -> dict:
-    return {
-        'exported_at': datetime.now().isoformat(),
-        'map_sizes': MapSizeRepository.get_all(),
-        'player_stats': PlayerStatsRepository.get_all(),
-        'detail_stats': DetailStatsRepository.get_all(),
-    }
+def get_distinct_server_names() -> list[str]:
+    """Get all distinct server_name values from data tables."""
+    conn = sqlite3.connect(DB_FILE)
+    rows = conn.execute(
+        'SELECT DISTINCT server_name FROM ('
+        '  SELECT server_name FROM map_sizes UNION'
+        '  SELECT server_name FROM player_stats UNION'
+        '  SELECT server_name FROM detail_stats'
+        ') ORDER BY server_name'
+    ).fetchall()
+    conn.close()
+    return [row[0] for row in rows]
 
 
 def export_by_server() -> dict:
     """Export data grouped by server name."""
-    servers = ServerRepository.get_all()
+    server_names = get_distinct_server_names()
     result: dict = {'exported_at': datetime.now().isoformat(), 'servers': {}}
 
-    for server_name in servers:
-        result['servers'][server_name] = {
-            'map_sizes': MapSizeRepository.get_all(server_name),
-            'player_stats': PlayerStatsRepository.get_all(server_name),
-            'detail_stats': DetailStatsRepository.get_all(server_name),
+    for name in server_names:
+        result['servers'][name] = {
+            'map_sizes': MapSizeRepository.get_all(name),
+            'player_stats': PlayerStatsRepository.get_all(name),
+            'detail_stats': DetailStatsRepository.get_all(name),
         }
 
-    # Also include data without a server (legacy / default)
-    default_data = {
-        'map_sizes': MapSizeRepository.get_all(None),
-        'player_stats': PlayerStatsRepository.get_all(None),
-        'detail_stats': DetailStatsRepository.get_all(None),
-    }
-    # If there are no servers at all, put everything under 'default'
-    if not servers:
-        result['servers']['default'] = default_data
-    else:
-        # Check if there's data not belonging to any named server
-        has_default_data = (
-            default_data['map_sizes'] or
-            default_data['player_stats'] or
-            default_data['detail_stats']
-        )
-        if has_default_data:
-            result['servers']['default'] = default_data
+    # Fallback: if no data at all, create empty default
+    if not result['servers']:
+        result['servers']['default'] = {
+            'map_sizes': {},
+            'player_stats': {},
+            'detail_stats': {},
+        }
 
     return result
 
@@ -62,8 +55,6 @@ def export_to_json():
     with open(DATA_JSON, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-    # Write servers list
-    servers = ServerRepository.get_all()
     server_names = list(data['servers'].keys())
     with open(SERVERS_JSON, 'w', encoding='utf-8') as f:
         json.dump(server_names, f, ensure_ascii=False, indent=2)
