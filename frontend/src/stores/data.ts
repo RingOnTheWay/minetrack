@@ -233,16 +233,22 @@ export const useDataStore = defineStore('data', () => {
         if (!appStore.serversLoaded) {
           await appStore.loadServers()
         }
-        if (!appStore.currentServer) {
-          loaded.value = true
-          return
-        }
-        try {
-          await loadFromAPI()
-        } catch {
+        // If no servers available (API unreachable), fall back to static mode
+        if (!appStore.currentServer && appStore.servers.length === 0) {
           appStore.setMode('static')
           loadingMessage.value = '少女翻阅古籍中...'
           await loadStaticData()
+        } else if (!appStore.currentServer) {
+          loaded.value = true
+          return
+        } else {
+          try {
+            await loadFromAPI()
+          } catch {
+            appStore.setMode('static')
+            loadingMessage.value = '少女翻阅古籍中...'
+            await loadStaticData()
+          }
         }
       }
       extractMetadata()
