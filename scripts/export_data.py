@@ -8,12 +8,14 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from backend.database.init import init_db
 from backend.services.exporter import export_to_json
 
 
 def main():
     print("正在导出数据...")
     try:
+        init_db()
         export_to_json()
     except Exception as e:
         print(f"错误：无法读取数据库")
